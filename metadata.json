@@ -1,0 +1,6 @@
+{
+  "name": "Pedidos 360 - Delivery & Market",
+  "description": "Plataforma de delivery y supermercado ultrarrápido con catálogo interactivo, canasta de compras, seguimiento en tiempo real e inicio de sesión con Google y Microsoft.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
