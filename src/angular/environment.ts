@@ -1,30 +1,20 @@
-// Angular Environment Configuration for AWS API Gateway / Lambda & JWT
+declare global {
+  interface ImportMeta {
+    readonly env: Record<string, string | undefined>;
+  }
+}
+
 export const environment = {
   production: false,
-  // Base endpoint for AWS API Gateway / Serverless backend
-  awsApiUrl: 'https://api.pedidos360.aws.example.com/v1',
-  awsRegion: 'us-east-1',
-  // Endpoints definitions
-  endpoints: {
+  msalConfig: {
     auth: {
-      login: '/auth/login',
-      register: '/auth/register',
-      refreshToken: '/auth/refresh',
-      profile: '/user/profile'
-    },
-    products: {
-      list: '/products',
-      detail: (id: string) => `/products/${id}`,
-      categories: '/products/categories'
-    },
-    cart: {
-      sync: '/cart/sync',
-      validateCoupon: '/cart/validate-coupon'
-    },
-    orders: {
-      checkout: '/orders/checkout',
-      list: '/orders/history',
-      track: (orderId: string) => `/orders/${orderId}/track`
+      clientId: import.meta.env.VITE_AZURE_CLIENT_ID,
+      authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AZURE_TENANT_ID}`,
+      redirectUri: 'http://localhost:4200/', // Ajusta el puerto si usas otro en desarrollo
     }
+  },
+  apiConfig: {
+    scopes: [import.meta.env.VITE_AZURE_SCOPE],
+    uri: 'http://localhost:8080/api' // Esta será la ruta de tu API Gateway o backend local
   }
 };

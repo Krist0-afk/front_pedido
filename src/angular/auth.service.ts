@@ -1,93 +1,51 @@
-/**
- * Angular Authentication Service for AWS API Gateway / Cognito JWT.
- */
-
-export const authServiceCode = `
-import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, map, catchError, of } from 'rxjs';
+import { PublicClientApplication, Configuration, AuthenticationResult } from '@azure/msal-browser';
 import { environment } from './environment';
-import { AuthResponse, UserProfile } from './models';
 
-@Injectable({
-  providedIn: 'root'
-})
-export class AuthService {
-  private http = inject(HttpClient);
-  private readonly TOKEN_KEY = 'pedidos360_jwt_token';
-  private readonly USER_KEY = 'pedidos360_user_profile';
+class AuthService {
+  private msalInstance: PublicClientApplication;
 
-  private currentUserSubject = new BehaviorSubject<UserProfile | null>(this.getStoredUser());
-  public currentUser$ = this.currentUserSubject.asObservable();
-
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(!!this.getToken());
-  public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
-
-  /**
-   * Login against AWS API Gateway endpoint
-   * POST \${environment.awsApiUrl}/auth/login
-   */
-  login(credentials: { email: string; password: string }): Observable<AuthResponse> {
-    const url = \`\${environment.awsApiUrl}\${environment.endpoints.auth.login}\`;
+  constructor() {
+    const msalConfig: Configuration = {
+      auth: {
+        ...environment.msalConfig.auth,
+        clientId: environment.msalConfig.auth.clientId ?? '',
+      },
+      cache: {
+        cacheLocation: 'sessionStorage',
+      }
+    };
     
-    return this.http.post<AuthResponse>(url, credentials).pipe(
-      tap(res => {
-        this.saveSession(res.token, res.user);
-      })
-    );
+    this.msalInstance = new PublicClientApplication(msalConfig);
+    this.msalInstance.initialize().then(() => {
+        console.log("MSAL Inicializado correctamente");
+    });
   }
 
-  /**
-   * Register new user against AWS API Gateway
-   */
-  register(userData: { name: string; email: string; password: string; rut?: string; phone?: string }): Observable<AuthResponse> {
-    const url = \`\${environment.awsApiUrl}\${environment.endpoints.auth.register}\`;
-
-    return this.http.post<AuthResponse>(url, userData).pipe(
-      tap(res => {
-        this.saveSession(res.token, res.user);
-      })
-    );
+  login() {
+    this.msalInstance.loginPopup({
+      scopes: environment.apiConfig.scopes.filter((scope): scope is string => scope !== undefined)
+    }).then((response: AuthenticationResult) => {
+      this.msalInstance.setActiveAccount(response.account);
+    }).catch((error: any) => {
+      console.error("Error en el login: ", error);
+    });
   }
 
-  /**
-   * Fetch authenticated user profile from AWS
-   */
-  getProfile(): Observable<UserProfile> {
-    const url = \`\${environment.awsApiUrl}\${environment.endpoints.auth.profile}\`;
-    return this.http.get<UserProfile>(url).pipe(
-      tap(user => {
-        this.currentUserSubject.next(user);
-        localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-      })
-    );
-  }
+  async getToken(): Promise<string | null> {
+    const account = this.msalInstance.getActiveAccount();
+    if (!account) return null;
 
-  saveSession(token: string, user: UserProfile): void {
-    localStorage.setItem(this.TOKEN_KEY, token);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-    this.currentUserSubject.next(user);
-    this.isAuthenticatedSubject.next(true);
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
-  }
-
-  logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    this.currentUserSubject.next(null);
-    this.isAuthenticatedSubject.next(false);
-  }
-
-  private getStoredUser(): UserProfile | null {
-    const raw = localStorage.getItem(this.USER_KEY);
     try {
-      return raw ? JSON.parse(raw) : null;
-    } catch {
+      const response = await this.msalInstance.acquireTokenSilent({
+        scopes: environment.apiConfig.scopes.filter((scope): scope is string => scope !== undefined),
+        account: account
+      });
+      return response.accessToken;
+    } catch (error) {
+      console.warn("Fallo al obtener token silencioso, requiere login interactivo", error);
       return null;
     }
   }
 }
-`;
+
+export const authService = new AuthService();
