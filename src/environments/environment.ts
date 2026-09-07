@@ -27,9 +27,9 @@ export const environment = {
      */
     baseUrl: 'https://REEMPLAZAR.execute-api.us-east-1.amazonaws.com/prod',
     /** Ruta del API Gateway que enruta al microservicio catálogo (EC2:8081). */
-    catalogo: '/catalogo/api/v1/catalogo',
+    catalogo: '/api/v1/catalogo',
     /** Ruta del API Gateway que enruta al microservicio compras (EC2:8082). */
-    compras: '/compras/api/v1/compras',
+    compras: '/api/v1/compras',
     /**
      * Scope expuesto por la API en el registro de aplicación.
      * Es lo que hace que Entra ID emita un access token cuyo `aud`

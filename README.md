@@ -65,14 +65,23 @@ Valores a revisar antes de la demo:
 
 ### Lo que debe estar configurado en API Gateway
 
-Rutas esperadas por el frontend, relativas a `api.baseUrl`:
+Los tres microservicios exponen rutas disjuntas, así que el gateway enruta por
+prefijo sin necesidad de reescribir la ruta:
 
-| Método | Ruta | Microservicio destino |
+| Recurso en API Gateway | Integración | Microservicio |
 | --- | --- | --- |
-| GET | `/catalogo/api/v1/catalogo/public` | catálogo (EC2:8081) |
-| GET | `/catalogo/api/v1/catalogo/privado` | catálogo (EC2:8081) |
-| GET | `/compras/api/v1/compras/carrito` | compras (EC2:8082) |
-| POST | `/compras/api/v1/compras/carrito` | compras (EC2:8082) |
+| `/api/v1/catalogo/{proxy+}` | `http://<ip-ec2>:8081/api/v1/catalogo/{proxy}` | catálogo |
+| `/api/v1/compras/{proxy+}` | `http://<ip-ec2>:8082/api/v1/compras/{proxy}` | compras |
+| `/api/v1/auth/{proxy+}` | `http://<ip-ec2>:8080/api/v1/auth/{proxy}` | auth |
+
+Endpoints que consume el frontend, relativos a `api.baseUrl`:
+
+| Método | Ruta | Protección en el backend |
+| --- | --- | --- |
+| GET | `/api/v1/catalogo/public` | `permitAll` |
+| GET | `/api/v1/catalogo/privado` | JWT válido |
+| GET | `/api/v1/compras/carrito` | JWT + App Role `User` |
+| POST | `/api/v1/compras/carrito` | JWT + App Role `User` |
 
 CORS debe permitir el origen del frontend y los headers `Authorization` y
 `Content-Type`, incluyendo el preflight `OPTIONS`.
