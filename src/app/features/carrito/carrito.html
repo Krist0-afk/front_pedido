@@ -1,0 +1,270 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
+  <div class="flex items-center gap-3 mb-6">
+    <a
+      routerLink="/"
+      class="w-9 h-9 rounded-xl border border-gray-200 bg-white hover:border-emerald-300 text-gray-600 hover:text-emerald-700 flex items-center justify-center transition-colors"
+    >
+      <app-icon name="arrow-left" class="w-4 h-4" />
+    </a>
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight text-gray-900">Confirmar tu pedido</h1>
+      <p class="text-xs text-gray-500 mt-0.5">
+        Ruta protegida: exige sesión en Entra ID y el App Role
+        <code class="font-mono font-bold">{{ auth.roles().join(', ') || 'User' }}</code>
+        que valida el microservicio de compras.
+      </p>
+    </div>
+  </div>
+
+  @if (carrito.items().length === 0) {
+    <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-12 text-center">
+      <span class="text-5xl block mb-3">🛒</span>
+      <h2 class="font-bold text-gray-900">Tu canasta está vacía</h2>
+      <p class="text-xs text-gray-500 mt-1">Vuelve al catálogo para agregar productos.</p>
+      <a
+        routerLink="/"
+        class="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-colors"
+      >
+        <span>Ir al catálogo</span>
+        <app-icon name="arrow-right" class="w-4 h-4" />
+      </a>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div class="lg:col-span-8 space-y-6">
+        <!-- Ítems -->
+        <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5">
+          <h2 class="font-extrabold text-gray-900 text-base mb-4 flex items-center gap-2">
+            <app-icon name="bag" class="w-5 h-5 text-emerald-700" />
+            Detalle de tu canasta
+            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-full">
+              {{ carrito.cantidadTotal() }}
+            </span>
+          </h2>
+
+          <div class="divide-y divide-gray-100">
+            @for (item of carrito.items(); track item.product.id) {
+              <div class="py-4 flex items-center gap-4">
+                <img
+                  [src]="item.product.image"
+                  [alt]="item.product.name"
+                  referrerpolicy="no-referrer"
+                  class="w-16 h-16 rounded-xl object-cover bg-gray-100 shrink-0 border border-gray-100"
+                />
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-sm font-bold text-gray-900 truncate">{{ item.product.name }}</h3>
+                  <p class="text-[11px] text-gray-500 mt-0.5 line-clamp-1">
+                    {{ item.product.storeName }} • {{ item.product.prepTime }}
+                  </p>
+                  <span class="text-xs text-emerald-700 font-mono font-bold block mt-1">
+                    {{ item.product.price * item.quantity | currency: 'CLP' : '$' : '1.0-0' }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg p-1 shrink-0">
+                  <button
+                    type="button"
+                    (click)="carrito.actualizarCantidad(item.product.id, item.quantity - 1)"
+                    class="w-6 h-6 rounded bg-white text-gray-700 flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer"
+                  >
+                    <app-icon name="minus" class="w-3 h-3" />
+                  </button>
+                  <span class="text-xs font-bold font-mono px-1">{{ item.quantity }}</span>
+                  <button
+                    type="button"
+                    (click)="carrito.actualizarCantidad(item.product.id, item.quantity + 1)"
+                    class="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center hover:bg-emerald-800 transition-colors cursor-pointer"
+                  >
+                    <app-icon name="plus" class="w-3 h-3" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  (click)="carrito.quitar(item.product.id)"
+                  class="text-gray-400 hover:text-rose-600 p-1 transition-colors cursor-pointer"
+                >
+                  <app-icon name="trash" class="w-4 h-4" />
+                </button>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Dirección -->
+        <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5">
+          <h2 class="font-extrabold text-gray-900 text-base mb-4 flex items-center gap-2">
+            <app-icon name="map-pin" class="w-5 h-5 text-emerald-700" />
+            Dirección de entrega
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            @for (direccion of direcciones; track direccion.id) {
+              <button
+                type="button"
+                (click)="seleccionarDireccion(direccion.id)"
+                class="text-left p-4 rounded-xl border transition-all cursor-pointer"
+                [class]="
+                  direccionId() === direccion.id
+                    ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/15'
+                    : 'border-gray-200 bg-white hover:border-emerald-200'
+                "
+              >
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-gray-900">{{ direccion.label }}</span>
+                  @if (direccionId() === direccion.id) {
+                    <app-icon name="check-circle" class="w-4 h-4 text-emerald-600" />
+                  }
+                </div>
+                <p class="text-[11px] text-gray-600">
+                  {{ direccion.street }} {{ direccion.number }}@if (direccion.depto) {
+                    <span>, {{ direccion.depto }}</span>
+                  }
+                </p>
+                <p class="text-[11px] text-gray-400 mt-0.5">
+                  {{ direccion.commune }}, {{ direccion.city }}
+                </p>
+                @if (direccion.reference) {
+                  <p class="text-[10px] text-gray-400 mt-1 italic">{{ direccion.reference }}</p>
+                }
+              </button>
+            }
+          </div>
+        </section>
+
+        <!-- Medio de pago -->
+        <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5">
+          <h2 class="font-extrabold text-gray-900 text-base mb-4 flex items-center gap-2">
+            <app-icon name="credit-card" class="w-5 h-5 text-emerald-700" />
+            Medio de pago
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              (click)="medioDePago.set('webpay')"
+              class="p-4 rounded-xl border text-left transition-all cursor-pointer"
+              [class]="
+                medioDePago() === 'webpay'
+                  ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/15'
+                  : 'border-gray-200 hover:border-emerald-200'
+              "
+            >
+              <span class="block text-xs font-bold text-gray-900">WebPay Plus</span>
+              <span class="block text-[10px] text-gray-500 mt-0.5">Débito y crédito</span>
+            </button>
+            <button
+              type="button"
+              (click)="medioDePago.set('wallets')"
+              class="p-4 rounded-xl border text-left transition-all cursor-pointer"
+              [class]="
+                medioDePago() === 'wallets'
+                  ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/15'
+                  : 'border-gray-200 hover:border-emerald-200'
+              "
+            >
+              <span class="block text-xs font-bold text-gray-900">Billeteras</span>
+              <span class="block text-[10px] text-gray-500 mt-0.5">Mach, Mercado Pago</span>
+            </button>
+            <button
+              type="button"
+              (click)="medioDePago.set('cash')"
+              class="p-4 rounded-xl border text-left transition-all cursor-pointer"
+              [class]="
+                medioDePago() === 'cash'
+                  ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/15'
+                  : 'border-gray-200 hover:border-emerald-200'
+              "
+            >
+              <span class="block text-xs font-bold text-gray-900">Efectivo</span>
+              <span class="block text-[10px] text-gray-500 mt-0.5">Paga al recibir</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Resumen -->
+      <div class="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
+        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5">
+          <h2 class="font-extrabold text-gray-900 text-base mb-4">Resumen de la orden</h2>
+
+          <div class="space-y-2 text-xs">
+            <div class="flex items-center justify-between text-gray-600">
+              <span>Subtotal</span>
+              <span class="font-mono font-medium">
+                {{ carrito.subtotal() | currency: 'CLP' : '$' : '1.0-0' }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-gray-600">
+              <span>Costo de envío</span>
+              <span class="font-mono font-medium">
+                @if (carrito.costoEnvio() === 0) {
+                  <span class="text-emerald-700 font-bold">GRATIS</span>
+                } @else {
+                  {{ carrito.costoEnvio() | currency: 'CLP' : '$' : '1.0-0' }}
+                }
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-gray-600">
+              <span>Tarifa de servicio (3%)</span>
+              <span class="font-mono font-medium">
+                {{ carrito.tarifaServicio() | currency: 'CLP' : '$' : '1.0-0' }}
+              </span>
+            </div>
+            <div
+              class="pt-3 border-t border-gray-100 flex items-center justify-between text-sm font-extrabold text-gray-900"
+            >
+              <span>Total a Pagar</span>
+              <span class="text-lg text-emerald-800 font-mono">
+                {{ carrito.total() | currency: 'CLP' : '$' : '1.0-0' }}
+              </span>
+            </div>
+          </div>
+
+          @if (error()) {
+            <div class="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-900">
+              <app-icon name="alert" class="w-4 h-4 mt-0.5 text-rose-600" />
+              <span>{{ error() }}</span>
+            </div>
+          }
+
+          <button
+            type="button"
+            [disabled]="enviando()"
+            (click)="confirmarPedido()"
+            class="w-full mt-4 py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-900/15 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          >
+            @if (enviando()) {
+              <app-icon name="refresh" class="w-4 h-4 animate-spin" />
+              <span>Enviando al microservicio…</span>
+            } @else {
+              <span>Confirmar y pagar</span>
+              <app-icon name="arrow-right" class="w-4 h-4" />
+            }
+          </button>
+
+          <p class="text-[10px] text-gray-400 flex items-center justify-center gap-1 mt-3 text-center">
+            <app-icon name="shield-check" class="w-3 h-3 text-emerald-600" />
+            El pedido viaja con tu access token; el backend resuelve el dueño desde el JWT.
+          </p>
+        </div>
+
+        <!-- Sesión en uso -->
+        <div class="bg-emerald-50 border border-emerald-200/70 rounded-2xl p-4 text-[11px] text-emerald-900">
+          <p class="font-bold flex items-center gap-1.5 mb-2">
+            <app-icon name="user" class="w-3.5 h-3.5 text-emerald-700" />
+            Comprando como
+          </p>
+          <p class="font-semibold">{{ auth.nombre() }}</p>
+          <p class="text-emerald-700">{{ auth.email() }}</p>
+          @if (auth.roles().length > 0) {
+            <p class="mt-2">
+              Roles:
+              @for (rol of auth.roles(); track rol) {
+                <span class="inline-block bg-emerald-700 text-white font-mono font-bold px-1.5 py-0.5 rounded ml-1">
+                  {{ rol }}
+                </span>
+              }
+            </p>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,114 @@
+<h1>Mi token</h1>
+<p class="texto-suave">
+  Claims que Azure Entra ID emitió para esta sesión. El access token es el que
+  viaja en el header <code>Authorization</code> hacia el API Gateway.
+</p>
+
+<section class="tarjeta">
+  <h2>Resumen de la sesión</h2>
+  <table class="tabla-claims">
+    <tbody>
+      <tr>
+        <th>Nombre</th>
+        <td>{{ auth.nombre() || '—' }}</td>
+      </tr>
+      <tr>
+        <th>Correo</th>
+        <td>{{ auth.email() || '—' }}</td>
+      </tr>
+      <tr>
+        <th>Roles (claim <code>roles</code>)</th>
+        <td>
+          @if (auth.roles().length) {
+            <span class="apilado">
+              @for (rol of auth.roles(); track rol) {
+                <span class="chip">{{ rol }}</span>
+              }
+            </span>
+          } @else {
+            <span class="chip chip-neutro">sin App Roles</span>
+          }
+        </td>
+      </tr>
+      <tr>
+        <th>Scopes (claim <code>scp</code>)</th>
+        <td>
+          @if (auth.scopes().length) {
+            <span class="apilado">
+              @for (scope of auth.scopes(); track scope) {
+                <span class="chip">{{ scope }}</span>
+              }
+            </span>
+          } @else {
+            <span class="chip chip-neutro">sin scopes</span>
+          }
+        </td>
+      </tr>
+      <tr>
+        <th>Audiencia (<code>aud</code>)</th>
+        <td>{{ auth.audiencia() || '—' }}</td>
+      </tr>
+      <tr>
+        <th>Emisor (<code>iss</code>)</th>
+        <td>{{ auth.emisor() || '—' }}</td>
+      </tr>
+      <tr>
+        <th>Expira (<code>exp</code>)</th>
+        <td>{{ auth.expiracion() ? (auth.expiracion() | date: 'medium') : '—' }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="apilado acciones">
+    <button
+      type="button"
+      class="boton boton-primario"
+      [disabled]="!auth.accessToken()"
+      (click)="copiarToken()"
+    >
+      {{ copiado() ? 'Copiado' : 'Copiar access token' }}
+    </button>
+    <button type="button" class="boton boton-neutro" (click)="refrescar()">
+      Renovar token
+    </button>
+  </div>
+</section>
+
+<section class="tarjeta bloque">
+  <h2>Access token</h2>
+  <p class="texto-suave">
+    Lo valida el API Gateway y, de nuevo, cada microservicio Spring Boot.
+  </p>
+  @if (claimsAccessToken().length) {
+    <table class="tabla-claims">
+      <tbody>
+        @for (claim of claimsAccessToken(); track claim.clave) {
+          <tr>
+            <th>{{ claim.clave }}</th>
+            <td>{{ claim.valor }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <p class="texto-suave">
+      Todavía no hay access token. Si acabas de iniciar sesión, pulsa
+      «Renovar token».
+    </p>
+  }
+</section>
+
+<section class="tarjeta bloque">
+  <h2>ID token</h2>
+  <p class="texto-suave">Identifica al usuario ante el frontend. No se envía al backend.</p>
+  <table class="tabla-claims">
+    <tbody>
+      @for (claim of claimsIdToken(); track claim.clave) {
+        <tr>
+          <th>{{ claim.clave }}</th>
+          <td>{{ claim.valor }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>

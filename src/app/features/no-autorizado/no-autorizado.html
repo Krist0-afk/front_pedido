@@ -1,0 +1,30 @@
+<h1>No tienes permisos para esta sección</h1>
+
+<div class="aviso aviso-atencion">
+  Tu sesión es válida, pero el token no incluye el App Role
+  @if (rol()) { <strong>{{ rol() }}</strong> } @else { requerido }
+  que exige el microservicio de compras.
+</div>
+
+<div class="tarjeta">
+  <h2>Cómo resolverlo</h2>
+  <p class="texto-suave">
+    En el portal de Entra ID: <em>App registrations → Pedidos360 → App roles</em>,
+    crea el rol y asígnalo al usuario en <em>Enterprise applications → Users and
+    groups</em>. Después cierra sesión y vuelve a entrar para que el tenant emita
+    un token nuevo con el claim <code>roles</code>.
+  </p>
+
+  <p class="texto-suave">
+    Roles actuales en tu token:
+    @if (auth.roles().length) {
+      <span class="apilado">
+        @for (r of auth.roles(); track r) { <span class="chip">{{ r }}</span> }
+      </span>
+    } @else {
+      <span class="chip chip-neutro">ninguno</span>
+    }
+  </p>
+
+  <a class="boton boton-neutro" routerLink="/perfil">Ver mi token</a>
+</div>

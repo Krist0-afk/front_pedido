@@ -1,0 +1,152 @@
+<header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100/80 shadow-xs">
+  <!-- Barra superior de anuncios -->
+  <div class="bg-emerald-900 text-white text-xs py-1.5 px-4">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="bg-emerald-500 text-emerald-950 font-bold text-[10px] uppercase px-1.5 py-0.5 rounded-full">
+          SUPER360
+        </span>
+        <span>¡Envío GRATIS en tu primera compra de Supermercado &amp; Comida!</span>
+      </div>
+      <div class="flex items-center gap-4 text-emerald-200 text-[11px]">
+        <span class="flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          Dark Stores Santiago 20 min
+        </span>
+        <span class="hidden sm:flex items-center gap-1 text-emerald-100">
+          <app-icon name="clock" class="w-3.5 h-3.5 text-emerald-400" />
+          <span>Entregas promedio 25 min</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegación principal -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-6">
+      <a routerLink="/" class="flex items-center gap-2.5 text-left group cursor-pointer focus:outline-hidden">
+        <div
+          class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-800 to-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-900/15 group-hover:scale-105 transition-transform"
+        >
+          <span class="font-extrabold text-lg tracking-tighter">360°</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-1">
+            <span class="font-extrabold text-xl tracking-tight text-emerald-950">Pedidos</span>
+            <span class="font-extrabold text-xl tracking-tight text-emerald-600">360</span>
+          </div>
+          <span class="text-[10px] font-semibold text-emerald-800 uppercase tracking-wider block -mt-1">
+            Delivery &amp; Market
+          </span>
+        </div>
+      </a>
+
+      <span
+        class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-900 text-xs font-medium border border-emerald-200/60"
+      >
+        <app-icon name="map-pin" class="w-3.5 h-3.5 text-emerald-600" />
+        <span class="text-gray-500 font-normal">Entregar en:</span>
+        <span class="font-semibold max-w-[160px] truncate">Av. Providencia 1345</span>
+      </span>
+    </div>
+
+    <!-- Buscador global -->
+    <div class="hidden lg:flex flex-1 max-w-md mx-4">
+      <div class="relative w-full">
+        <app-icon name="search" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          placeholder="Buscar hamburguesas, sushi, fideos, leche..."
+          [value]="ui.busqueda()"
+          (input)="ui.buscar($any($event.target).value)"
+          class="w-full pl-10 pr-4 py-2 bg-gray-50 hover:bg-gray-100/80 focus:bg-white text-sm rounded-full border border-gray-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 outline-hidden transition-all text-gray-800"
+        />
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Enlaces de navegación -->
+      <div class="hidden sm:flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl text-xs font-medium text-gray-700">
+        <a
+          routerLink="/"
+          routerLinkActive="bg-white text-emerald-800 font-semibold shadow-xs"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="px-3 py-1.5 rounded-lg transition-all hover:text-emerald-700"
+        >
+          Catálogo
+        </a>
+        <a
+          routerLink="/carrito"
+          routerLinkActive="bg-white text-emerald-800 font-semibold shadow-xs"
+          class="px-3 py-1.5 rounded-lg transition-all hover:text-emerald-700"
+        >
+          Carrito
+        </a>
+        @if (auth.autenticado()) {
+          <a
+            routerLink="/perfil"
+            routerLinkActive="bg-white text-emerald-800 font-semibold shadow-xs"
+            class="px-3 py-1.5 rounded-lg transition-all hover:text-emerald-700"
+          >
+            Mi token
+          </a>
+        }
+      </div>
+
+      <!-- Canasta -->
+      <button
+        type="button"
+        (click)="ui.abrirCarrito()"
+        class="relative flex items-center gap-2.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-semibold text-xs shadow-sm transition-all cursor-pointer"
+      >
+        <app-icon name="bag" class="w-4 h-4" />
+        <span class="hidden sm:inline">Canasta 360</span>
+        <span class="bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded-md font-mono text-[11px]">
+          {{ carrito.subtotal() | currency: 'CLP' : '$' : '1.0-0' }}
+        </span>
+        @if (carrito.cantidadTotal() > 0) {
+          <span
+            class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs"
+          >
+            {{ carrito.cantidadTotal() }}
+          </span>
+        }
+      </button>
+
+      <!-- Sesión real contra Entra ID vía MSAL -->
+      @if (auth.autenticado()) {
+        <div class="flex items-center gap-1">
+          <a
+            routerLink="/perfil"
+            class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-gray-200 hover:border-emerald-300 bg-white text-xs font-medium text-gray-800 transition-colors cursor-pointer"
+          >
+            <span
+              class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs"
+            >
+              {{ auth.nombre().charAt(0) }}
+            </span>
+            <span class="hidden md:inline max-w-[90px] truncate">{{ auth.nombre().split(' ')[0] }}</span>
+          </a>
+          <button
+            type="button"
+            (click)="auth.logout()"
+            title="Cerrar sesión"
+            class="w-8 h-8 rounded-xl border border-gray-200 hover:border-rose-300 hover:text-rose-600 text-gray-500 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <app-icon name="log-out" class="w-3.5 h-3.5" />
+          </button>
+        </div>
+      } @else {
+        <button
+          type="button"
+          [disabled]="auth.ocupado()"
+          (click)="auth.login()"
+          class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-600 text-emerald-800 hover:bg-emerald-50 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60"
+        >
+          <app-icon name="user" class="w-3.5 h-3.5" />
+          <span>{{ auth.ocupado() ? 'Conectando…' : 'Ingresar' }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</header>

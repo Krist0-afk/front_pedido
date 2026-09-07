@@ -1,0 +1,139 @@
+@if (ui.carritoAbierto()) {
+  <div class="fixed inset-0 z-50 flex justify-end">
+    <!-- Fondo -->
+    <div
+      (click)="ui.cerrarCarrito()"
+      class="fixed inset-0 bg-emerald-950/40 backdrop-blur-xs transition-opacity"
+    ></div>
+
+    <div
+      class="relative z-10 w-full max-w-md bg-white h-full shadow-2xl flex flex-col border-l border-emerald-100"
+    >
+      <!-- Cabecera -->
+      <div class="p-5 border-b border-gray-100 flex items-center justify-between bg-emerald-50/50">
+        <div class="flex items-center gap-2">
+          <app-icon name="bag" class="w-5 h-5 text-emerald-800" />
+          <h3 class="font-extrabold text-gray-900 text-base">Tu Canasta 360</h3>
+          <span class="bg-emerald-700 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+            {{ carrito.cantidadTotal() }}
+          </span>
+        </div>
+        <button
+          type="button"
+          (click)="ui.cerrarCarrito()"
+          class="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-500 hover:text-gray-800 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+        >
+          <app-icon name="x" class="w-4 h-4" />
+        </button>
+      </div>
+
+      <!-- Progreso de envío gratis -->
+      <div class="px-5 py-3 bg-emerald-50/60 border-b border-emerald-100 text-xs">
+        <div class="flex justify-between font-semibold text-emerald-950 mb-1">
+          <span>Progreso Envío Gratis</span>
+          <span class="font-mono font-bold">{{ carrito.progresoEnvioGratis() }}%</span>
+        </div>
+        <div class="w-full h-2 bg-emerald-200 rounded-full overflow-hidden">
+          <div
+            class="h-full bg-emerald-600 rounded-full transition-all"
+            [style.width.%]="carrito.progresoEnvioGratis()"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Ítems -->
+      <div class="flex-1 overflow-y-auto p-5 divide-y divide-gray-100">
+        @for (item of carrito.items(); track idDe($index, item)) {
+          <div class="py-3.5 flex items-center gap-3">
+            <img
+              [src]="item.product.image"
+              [alt]="item.product.name"
+              referrerpolicy="no-referrer"
+              class="w-14 h-14 rounded-xl object-cover bg-gray-100 shrink-0 border border-gray-100"
+            />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-xs font-bold text-gray-900 truncate">{{ item.product.name }}</h4>
+              <span class="text-[11px] text-emerald-700 font-mono font-bold block mt-0.5">
+                {{ item.product.price * item.quantity | currency: 'CLP' : '$' : '1.0-0' }}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg p-1 shrink-0">
+              <button
+                type="button"
+                (click)="carrito.actualizarCantidad(item.product.id, item.quantity - 1)"
+                class="w-6 h-6 rounded bg-white text-gray-700 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <app-icon name="minus" class="w-3 h-3" />
+              </button>
+              <span class="text-xs font-bold font-mono px-1">{{ item.quantity }}</span>
+              <button
+                type="button"
+                (click)="carrito.actualizarCantidad(item.product.id, item.quantity + 1)"
+                class="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center hover:bg-emerald-800 transition-colors cursor-pointer"
+              >
+                <app-icon name="plus" class="w-3 h-3" />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              (click)="carrito.quitar(item.product.id)"
+              class="text-gray-400 hover:text-rose-600 p-1 transition-colors cursor-pointer"
+            >
+              <app-icon name="trash" class="w-3.5 h-3.5" />
+            </button>
+          </div>
+        } @empty {
+          <div class="text-center py-16">
+            <span class="text-4xl block mb-2">🛒</span>
+            <p class="font-bold text-gray-800 text-sm">Tu canasta está vacía</p>
+            <p class="text-xs text-gray-400 mt-1">Explora nuestro catálogo gourmet y súper.</p>
+          </div>
+        }
+      </div>
+
+      <!-- Totales -->
+      @if (carrito.items().length > 0) {
+        <div class="p-5 border-t border-gray-100 bg-gray-50/50 space-y-2.5 text-xs">
+          <div class="flex justify-between text-gray-600">
+            <span>Subtotal</span>
+            <span class="font-mono">{{ carrito.subtotal() | currency: 'CLP' : '$' : '1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between text-gray-600">
+            <span>Envío</span>
+            <span class="font-mono">
+              @if (carrito.costoEnvio() === 0) {
+                <span class="text-emerald-700 font-bold">GRATIS</span>
+              } @else {
+                {{ carrito.costoEnvio() | currency: 'CLP' : '$' : '1.0-0' }}
+              }
+            </span>
+          </div>
+          <div class="flex justify-between text-gray-600">
+            <span>Tarifa servicio (3%)</span>
+            <span class="font-mono">{{ carrito.tarifaServicio() | currency: 'CLP' : '$' : '1.0-0' }}</span>
+          </div>
+
+          <div
+            class="pt-2 border-t border-gray-200 flex justify-between items-center text-sm font-extrabold text-gray-900"
+          >
+            <span>Total Estimado</span>
+            <span class="text-base font-mono text-emerald-800">
+              {{ carrito.total() | currency: 'CLP' : '$' : '1.0-0' }}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            (click)="irAPagar()"
+            class="w-full mt-2 py-3 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-900/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <span>Ir a Pagar Orden</span>
+            <app-icon name="arrow-right" class="w-4 h-4" />
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -1,0 +1,498 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
+  <!-- Estado de la conexión con el backend -->
+  @if (apiSinConfigurar) {
+    <div
+      class="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900"
+    >
+      <app-icon name="alert" class="w-4 h-4 mt-0.5 text-amber-600" />
+      <div>
+        <p class="font-bold">Catálogo de demostración</p>
+        <p class="mt-0.5 text-amber-800">
+          El API Gateway aún no está configurado (<code class="font-mono">api.baseUrl</code> sigue
+          con el marcador <code class="font-mono">REEMPLAZAR</code> en
+          <code class="font-mono">src/environments/</code>). El inicio de sesión con Entra ID
+          funciona igual; estos productos salen del catálogo local.
+        </p>
+      </div>
+    </div>
+  } @else if (error()) {
+    <div
+      class="mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-900"
+    >
+      <app-icon name="alert" class="w-4 h-4 mt-0.5 text-rose-600" />
+      <div class="flex-1">
+        <p class="font-bold">No se pudo leer el catálogo desde el microservicio</p>
+        <p class="mt-0.5 text-rose-800">{{ error() }}</p>
+        <p class="mt-1 text-rose-700">Mostrando el catálogo local mientras tanto.</p>
+      </div>
+      <button
+        type="button"
+        (click)="cargar()"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white font-bold text-[11px] transition-colors cursor-pointer shrink-0"
+      >
+        <app-icon name="refresh" class="w-3 h-3" />
+        Reintentar
+      </button>
+    </div>
+  } @else if (endpointUsado()) {
+    <div
+      class="mb-6 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-900"
+    >
+      <app-icon name="shield-check" class="w-4 h-4 text-emerald-600" />
+      <span>
+        Catálogo servido por el microservicio vía API Gateway
+        <code class="font-mono font-bold">{{ endpointUsado() }}</code>
+        @if (auth.autenticado()) {
+          <span class="font-semibold"> — con JWT de Entra ID validado en el backend.</span>
+        }
+      </span>
+    </div>
+  }
+
+  <!-- Selector de modo -->
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+    <div
+      class="bg-gray-100 p-1.5 rounded-2xl flex items-center w-full sm:w-auto shadow-inner border border-gray-200/70"
+    >
+      <button
+        type="button"
+        (click)="cambiarModo('restaurantes')"
+        class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer"
+        [class]="
+          modo() === 'restaurantes'
+            ? 'bg-emerald-700 text-white shadow-md shadow-emerald-900/10'
+            : 'text-gray-600 hover:text-emerald-800'
+        "
+      >
+        <span class="text-base">🍔</span>
+        <span>Restaurantes &amp; Comida</span>
+      </button>
+      <button
+        type="button"
+        (click)="cambiarModo('supermercado')"
+        class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer"
+        [class]="
+          modo() === 'supermercado'
+            ? 'bg-emerald-700 text-white shadow-md shadow-emerald-900/10'
+            : 'text-gray-600 hover:text-emerald-800'
+        "
+      >
+        <span class="text-base">🛒</span>
+        <span>Supermercado &amp; Despensa</span>
+        <span
+          class="bg-emerald-500 text-emerald-950 text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-full ml-1"
+        >
+          20 min
+        </span>
+      </button>
+    </div>
+
+    <div
+      class="hidden md:flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50/80 px-3.5 py-2 rounded-xl border border-emerald-200/60"
+    >
+      <app-icon name="sparkles" class="w-4 h-4 text-emerald-600" />
+      <span>+140 locales en Providencia y Santiago Centro listos para despachar</span>
+    </div>
+  </div>
+
+  <!-- Banners promocionales -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div
+      class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-900 p-6 text-white shadow-sm flex flex-col justify-between min-h-[160px]"
+    >
+      <div class="relative z-10">
+        <span
+          class="inline-flex items-center gap-1 bg-emerald-500 text-emerald-950 text-xs font-bold px-2.5 py-0.5 rounded-full mb-2"
+        >
+          <app-icon name="sparkles" class="w-3 h-3" />
+          CUPÓN EXCLUSIVO
+        </span>
+        <h3 class="text-xl font-extrabold tracking-tight">Envío GRATIS en Supermercado 360</h3>
+        <p class="text-emerald-100 text-xs mt-1 max-w-sm">
+          Despacho express en 20 minutos con Shopper dedicado en compras sobre $20.000.
+        </p>
+      </div>
+      <div class="relative z-10 flex items-center gap-3 mt-4">
+        <div
+          class="bg-emerald-950/40 border border-emerald-400/30 px-3 py-1.5 rounded-lg font-mono font-bold text-xs tracking-wider text-emerald-200"
+        >
+          SUPER360
+        </div>
+        <button
+          type="button"
+          (click)="copiarCupon('SUPER360')"
+          class="px-3 py-1.5 bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+        >
+          @if (cuponCopiado() === 'SUPER360') {
+            <app-icon name="check" class="w-3.5 h-3.5 text-emerald-600" />
+            <span>¡Copiado!</span>
+          } @else {
+            <app-icon name="copy" class="w-3.5 h-3.5 text-emerald-800" />
+            <span>Copiar Cupón</span>
+          }
+        </button>
+      </div>
+      <div class="absolute right-3 -bottom-4 text-7xl select-none opacity-20 pointer-events-none">
+        🛒
+      </div>
+    </div>
+
+    <div
+      class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-700 via-orange-600 to-amber-900 p-6 text-white shadow-sm flex flex-col justify-between min-h-[160px]"
+    >
+      <div class="relative z-10">
+        <span
+          class="inline-flex items-center gap-1 bg-amber-400 text-amber-950 text-xs font-bold px-2.5 py-0.5 rounded-full mb-2"
+        >
+          <app-icon name="flame" class="w-3 h-3" />
+          PROMO DEL DÍA
+        </span>
+        <h3 class="text-xl font-extrabold tracking-tight">2x1 Gourmet Doble Sabor en Burgers</h3>
+        <p class="text-amber-100 text-xs mt-1 max-w-sm">
+          Pide una Burger 360 Doble Cheddar y te regalamos la segunda para compartir.
+        </p>
+      </div>
+      <div class="relative z-10 flex items-center gap-3 mt-4">
+        <button
+          type="button"
+          (click)="verHamburguesas()"
+          class="px-4 py-1.5 bg-white text-amber-950 hover:bg-amber-50 font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+        >
+          <span>Ver Hamburguesas</span>
+          <app-icon name="arrow-right" class="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div class="absolute right-3 -bottom-4 text-7xl select-none opacity-20 pointer-events-none">
+        🍔
+      </div>
+    </div>
+  </div>
+
+  <!-- Categorías -->
+  <div class="mb-8">
+    <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+      @for (cat of categorias(); track cat) {
+        <button
+          type="button"
+          (click)="categoria.set(cat)"
+          class="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0"
+          [class]="
+            categoria() === cat
+              ? 'bg-emerald-800 text-white shadow-sm shadow-emerald-900/20 ring-2 ring-emerald-800/20'
+              : 'bg-white text-gray-700 hover:bg-emerald-50 border border-gray-200/80 hover:border-emerald-200'
+          "
+        >
+          {{ cat }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Productos + canasta -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="lg:col-span-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold tracking-tight text-gray-900">
+          {{ modo() === 'restaurantes' ? 'Los Favoritos de la Ciudad' : 'Supermercado Rápido en 20 min' }}
+        </h2>
+        <span class="text-xs text-gray-500 font-medium">
+          @if (cargando()) {
+            Cargando catálogo…
+          } @else {
+            Mostrando {{ productosFiltrados().length }} productos
+          }
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        @for (product of productosFiltrados(); track idDe($index, product)) {
+          <div
+            class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col group"
+          >
+            <div class="relative h-44 w-full overflow-hidden bg-gray-100">
+              <img
+                [src]="product.image"
+                [alt]="product.name"
+                referrerpolicy="no-referrer"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              @if (product.badge) {
+                <div
+                  class="absolute top-3 left-3 bg-emerald-700/90 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-md shadow-xs"
+                >
+                  {{ product.badge }}
+                </div>
+              }
+              @if (product.origen === 'api') {
+                <div
+                  class="absolute top-3 right-3 bg-white/95 backdrop-blur-xs text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs"
+                  title="Este producto viene del microservicio de catálogo"
+                >
+                  API
+                </div>
+              }
+              <div
+                class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs text-gray-800 text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs"
+              >
+                <app-icon name="star" relleno class="w-3 h-3 text-amber-400" />
+                <span>{{ product.rating }}</span>
+                <span class="text-gray-400 font-normal">({{ product.reviewsCount }})</span>
+              </div>
+            </div>
+
+            <div class="p-4 flex-1 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-2 text-[11px] text-gray-500 mb-1">
+                  <span class="flex items-center gap-1">
+                    <app-icon name="clock" class="w-3 h-3 text-emerald-600" />
+                    {{ product.prepTime }}
+                  </span>
+                  <span>•</span>
+                  <span>{{ product.portionOrCalories || product.packInfo || product.storeName }}</span>
+                </div>
+
+                <h3
+                  class="font-bold text-gray-900 text-base leading-snug group-hover:text-emerald-800 transition-colors"
+                >
+                  {{ product.name }}
+                </h3>
+                <p class="text-gray-500 text-xs mt-1.5 line-clamp-2 leading-relaxed">
+                  {{ product.description }}
+                </p>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+                <div>
+                  <span class="text-lg font-extrabold text-gray-900 font-mono">
+                    {{ product.price | currency: 'CLP' : '$' : '1.0-0' }}
+                  </span>
+                  @if (product.refUsd) {
+                    <span class="block text-[10px] text-gray-400">ref {{ product.refUsd }}</span>
+                  }
+                </div>
+
+                @let enCarrito = carrito.cantidadDe(product.id);
+                @if (enCarrito > 0) {
+                  <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-1">
+                    <button
+                      type="button"
+                      (click)="carrito.actualizarCantidad(product.id, enCarrito - 1)"
+                      class="w-7 h-7 rounded-lg bg-white text-emerald-800 flex items-center justify-center hover:bg-emerald-100 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <app-icon name="minus" class="w-3.5 h-3.5" />
+                    </button>
+                    <span class="text-xs font-bold text-emerald-900 px-1 font-mono">{{ enCarrito }}</span>
+                    <button
+                      type="button"
+                      (click)="carrito.actualizarCantidad(product.id, enCarrito + 1)"
+                      class="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center hover:bg-emerald-800 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <app-icon name="plus" class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    (click)="agregar(product)"
+                    class="flex items-center gap-1 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <app-icon name="plus" class="w-3.5 h-3.5" />
+                    <span>Añadir</span>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="sm:col-span-2 py-16 text-center text-sm text-gray-500">
+            <span class="text-4xl block mb-2">🔍</span>
+            No hay productos que coincidan con tu búsqueda.
+          </div>
+        }
+      </div>
+
+      @if (modo() === 'supermercado') {
+        <div
+          class="mt-8 bg-emerald-50 border border-emerald-200/80 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-xl shrink-0"
+            >
+              🛒
+            </div>
+            <div>
+              <h4 class="font-bold text-emerald-950 text-sm">
+                ¿No encuentras el producto exacto que buscas?
+              </h4>
+              <p class="text-xs text-emerald-800 mt-0.5">
+                Un shopper de Pedidos 360 puede comprarlo especialmente para ti en el supermercado.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="ui.avisar('Shopper personalizado activado: indica tus notas en el carrito.')"
+            class="px-4 py-2 bg-emerald-800 text-white text-xs font-bold rounded-xl hover:bg-emerald-900 transition-colors cursor-pointer shrink-0"
+          >
+            Pedir a un Shopper +
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Canasta fija -->
+    <div class="lg:col-span-4 lg:sticky lg:top-24">
+      <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+          <div class="flex items-center gap-2">
+            <app-icon name="bag" class="w-5 h-5 text-emerald-700" />
+            <h3 class="font-extrabold text-gray-900 text-base">Tu Canasta 360</h3>
+            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-full">
+              {{ carrito.cantidadTotal() }}
+            </span>
+          </div>
+          <button
+            type="button"
+            (click)="ui.abrirCarrito()"
+            class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold underline cursor-pointer"
+          >
+            Abrir panel
+          </button>
+        </div>
+
+        <div class="my-4 bg-emerald-50/70 border border-emerald-100 rounded-xl p-3">
+          <div class="flex items-center justify-between text-xs font-semibold text-emerald-950 mb-1.5">
+            <span>
+              @if (carrito.faltaParaEnvioGratis() === 0) {
+                <span class="text-emerald-700 font-bold flex items-center gap-1">
+                  <app-icon name="sparkles" class="w-3.5 h-3.5" />
+                  ¡Envío GRATIS activado hoy!
+                </span>
+              } @else {
+                Faltan
+                <span class="font-bold font-mono">
+                  {{ carrito.faltaParaEnvioGratis() | currency: 'CLP' : '$' : '1.0-0' }}
+                </span>
+                para delivery gratis
+              }
+            </span>
+            <span class="font-mono font-bold text-emerald-700">{{ carrito.progresoEnvioGratis() }}%</span>
+          </div>
+          <div class="w-full h-2 bg-emerald-200/60 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-emerald-600 rounded-full transition-all duration-500"
+              [style.width.%]="carrito.progresoEnvioGratis()"
+            ></div>
+          </div>
+        </div>
+
+        @if (carrito.items().length === 0) {
+          <div class="py-8 text-center">
+            <div
+              class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-2 text-xl"
+            >
+              🛒
+            </div>
+            <p class="text-sm font-semibold text-gray-700">Tu canasta está vacía</p>
+            <p class="text-xs text-gray-400 mt-1">
+              Agrega platos gourmet o abarrotes para comenzar tu pedido.
+            </p>
+          </div>
+        } @else {
+          <div class="divide-y divide-gray-100 max-h-[300px] overflow-y-auto pr-1">
+            @for (item of carrito.items(); track item.product.id) {
+              <div class="py-3 flex items-center gap-3">
+                <img
+                  [src]="item.product.image"
+                  [alt]="item.product.name"
+                  referrerpolicy="no-referrer"
+                  class="w-12 h-12 rounded-lg object-cover bg-gray-100 shrink-0"
+                />
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-xs font-bold text-gray-900 truncate">{{ item.product.name }}</h4>
+                  <div class="text-[11px] text-gray-500 font-mono mt-0.5">
+                    {{ item.product.price * item.quantity | currency: 'CLP' : '$' : '1.0-0' }}
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg p-1 shrink-0">
+                  <button
+                    type="button"
+                    (click)="carrito.actualizarCantidad(item.product.id, item.quantity - 1)"
+                    class="w-5 h-5 rounded-md bg-white text-gray-700 flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer"
+                  >
+                    <app-icon name="minus" class="w-3 h-3" />
+                  </button>
+                  <span class="text-xs font-bold font-mono px-1">{{ item.quantity }}</span>
+                  <button
+                    type="button"
+                    (click)="carrito.actualizarCantidad(item.product.id, item.quantity + 1)"
+                    class="w-5 h-5 rounded-md bg-emerald-700 text-white flex items-center justify-center hover:bg-emerald-800 transition-colors cursor-pointer"
+                  >
+                    <app-icon name="plus" class="w-3 h-3" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  (click)="quitar(item.product)"
+                  class="text-gray-400 hover:text-rose-600 transition-colors p-1 cursor-pointer"
+                >
+                  <app-icon name="trash" class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-gray-100 space-y-2 text-xs">
+            <div class="flex items-center justify-between text-gray-600">
+              <span>Subtotal</span>
+              <span class="font-mono font-medium">
+                {{ carrito.subtotal() | currency: 'CLP' : '$' : '1.0-0' }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-gray-600">
+              <span>Costo de envío</span>
+              <span class="font-mono font-medium">
+                @if (carrito.costoEnvio() === 0) {
+                  <span class="text-emerald-700 font-bold">GRATIS</span>
+                } @else {
+                  {{ carrito.costoEnvio() | currency: 'CLP' : '$' : '1.0-0' }}
+                }
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-gray-600">
+              <span>Tarifa de servicio (3%)</span>
+              <span class="font-mono font-medium">
+                {{ carrito.tarifaServicio() | currency: 'CLP' : '$' : '1.0-0' }}
+              </span>
+            </div>
+
+            <div
+              class="pt-2 border-t border-gray-100 flex items-center justify-between text-sm font-extrabold text-gray-900"
+            >
+              <span>Total a Pagar</span>
+              <span class="text-base text-emerald-800 font-mono">
+                {{ carrito.total() | currency: 'CLP' : '$' : '1.0-0' }}
+              </span>
+            </div>
+
+            <a
+              routerLink="/carrito"
+              class="w-full mt-3 py-3 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-emerald-900/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <span>Ver Carrito y Pagar</span>
+              <app-icon name="arrow-right" class="w-4 h-4" />
+            </a>
+
+            <div class="text-center pt-2">
+              <span class="text-[10px] text-gray-400 flex items-center justify-center gap-1">
+                <app-icon name="shield-check" class="w-3 h-3 text-emerald-600" />
+                Pedido protegido con JWT de Azure Entra ID
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
