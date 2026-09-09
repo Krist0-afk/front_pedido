@@ -14,8 +14,9 @@ export const environment = {
   },
 
   api: {
-    // URL base del stage de AWS API Gateway.
-    baseUrl: 'https://nub4p4p3ga.execute-api.us-east-1.amazonaws.com/',
+    // URL base del stage de AWS API Gateway. Sin barra final: las rutas de
+    // abajo ya empiezan con `/`, y `host//api/...` no matchea en el Gateway.
+    baseUrl: 'https://nub4p4p3ga.execute-api.us-east-1.amazonaws.com',
     // Ruta del API Gateway que enruta al microservicio catálogo (EC2:8081).
     catalogo: '/api/v1/catalogo',
     /** Ruta del API Gateway que enruta al microservicio compras (EC2:8082). */

@@ -1,6 +1,18 @@
 import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { MsalBroadcastService } from '@azure/msal-angular';
+import { InteractionStatus } from '@azure/msal-browser';
+import { filter, take } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { CATALOGO_DEMO } from '../../core/data/catalogo-demo';
 import { ModoCatalogo, ProductoVista } from '../../core/models/producto.model';
@@ -37,6 +49,8 @@ const CATEGORIAS_SUPERMERCADO = [
 })
 export class Catalogo implements OnInit {
   private readonly catalogoApi = inject(CatalogoService);
+  private readonly msalBroadcast = inject(MsalBroadcastService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly auth = inject(AuthService);
   protected readonly carrito = inject(CarritoStore);
   protected readonly ui = inject(UiStore);
@@ -76,7 +90,18 @@ export class Catalogo implements OnInit {
   });
 
   ngOnInit(): void {
-    this.cargar();
+    // Esperar a que MSAL termine el arranque y el manejo del redirect antes de
+    // pegarle al API Gateway. Si la petición sale antes, `auth.autenticado()`
+    // todavía es false y el MsalInterceptor (InteractionType.Redirect) recurre
+    // a acquireTokenRedirect en vez de acquireTokenSilent, reenviando a Entra
+    // ID en bucle porque la redirectUri es esta misma pantalla.
+    this.msalBroadcast.inProgress$
+      .pipe(
+        filter((estado) => estado === InteractionStatus.None),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.cargar());
   }
 
   protected cargar(): void {

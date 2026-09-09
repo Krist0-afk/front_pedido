@@ -76,8 +76,11 @@ export function MSALGuardConfigFactory(): MsalGuardConfiguration {
  */
 export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string> | null>([
+    // Solo `/privado` exige token. `/public` es `permitAll` en el backend: si
+    // lo capturara el comodín, el interceptor forzaría login para ver el
+    // catálogo de forma anónima.
     [
-      `${environment.api.baseUrl}${environment.api.catalogo}/*`,
+      `${environment.api.baseUrl}${environment.api.catalogo}/privado`,
       [...environment.api.scopes],
     ],
     [
