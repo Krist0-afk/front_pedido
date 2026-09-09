@@ -15,7 +15,9 @@ export function describirError(error: unknown): string {
     case 401:
       return 'El token fue rechazado (401). Puede estar expirado, o el issuer/audience no coincide con lo que valida el API Gateway.';
     case 403:
-      return 'Token válido pero sin permisos (403). Falta el App Role o el scope que exige el microservicio.';
+      return 'Token válido pero sin permisos (403). Lo rechaza el authorizer del '
+        + 'API Gateway por los authorization scopes de la ruta, o el microservicio '
+        + 'por el App Role. Compara el claim scp y roles del token en /perfil.';
     case 404:
       return 'La ruta no existe en el API Gateway (404). Revisa el mapeo hacia el microservicio.';
     case 502:
