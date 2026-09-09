@@ -38,8 +38,31 @@ lleva Node ni `node_modules`.
 
 ```bash
 docker build -t pedidos360-front:1.0.0 .
-docker run --rm -p 8080:80 pedidos360-front:1.0.0   # http://localhost:8080
+docker run --rm -p 8080:80 pedidos360-front:1.0.0    # http://localhost:8080
+docker run --rm -p 443:443 pedidos360-front:1.0.0    # https://<host>
 ```
+
+### Por qué el contenedor sirve HTTPS
+
+MSAL necesita la **Web Crypto API** para generar el PKCE, y los navegadores
+solo la exponen en **contextos seguros**: `https://`, `http://localhost` y
+`http://127.0.0.1`. Servido por `http://` con una IP, `crypto.subtle` no
+existe, la instancia de MSAL falla al construirse y el bootstrap de Angular
+muere antes de renderizar: **página en blanco** y `BrowserAuthError:
+crypto_nonexistent` en consola.
+
+Por eso el contenedor genera un certificado autofirmado en tiempo de build y
+sirve por 443, y el puerto 80 redirige a `https` salvo en localhost. El host
+del certificado se controla con un `ARG`:
+
+```bash
+docker build --build-arg TLS_HOST=3.213.91.126 -t pedidos360-front:1.0.0 .
+```
+
+Al ser autofirmado el navegador advierte una vez; aceptando la excepción el
+origen pasa a ser contexto seguro y MSAL funciona. Para un despliegue de
+verdad, en lugar de esto se termina TLS en un ALB o CloudFront con un
+certificado real, y el contenedor se deja solo en HTTP.
 
 `nginx.conf` resuelve dos cosas que un servidor de estáticos por defecto no
 hace bien con Angular:
@@ -55,10 +78,9 @@ La configuración del `environment.ts` (URL del API Gateway, `clientId`,
 `redirectUri`) se compila **dentro** del bundle. Cambiarla exige reconstruir la
 imagen; no se puede inyectar por variable de entorno en tiempo de ejecución.
 
-El contenedor expone **HTTP en el puerto 80**. Entra ID solo acepta redirect
-URIs `https` fuera de `localhost`, así que en el despliegue real el TLS tiene
-que terminar delante del contenedor y el origen resultante debe coincidir
-exactamente con `msal.redirectUri`.
+Sea cual sea la forma de servir el front, el origen resultante debe coincidir
+**exactamente** con `msal.redirectUri` y estar registrado como Redirect URI de
+tipo SPA en Entra ID.
 
 ## Configuración
 
