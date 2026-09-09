@@ -1,6 +1,8 @@
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { MsalBroadcastService } from '@azure/msal-angular';
+import { InteractionStatus } from '@azure/msal-browser';
 import { of, throwError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { CATALOGO_DEMO } from '../../core/data/catalogo-demo';
@@ -22,6 +24,8 @@ function configurar(catalogoApi: Partial<CatalogoService>) {
       provideZonelessChangeDetection(),
       provideRouter([]),
       { provide: AuthService, useClass: AuthServiceFalso },
+      // El componente espera a que MSAL termine el redirect antes de cargar.
+      { provide: MsalBroadcastService, useValue: { inProgress$: of(InteractionStatus.None) } },
       { provide: CatalogoService, useValue: catalogoApi },
     ],
   });

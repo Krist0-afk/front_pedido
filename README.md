@@ -37,9 +37,9 @@ La imagen se construye en dos etapas: `node:22-alpine` compila el bundle y
 lleva Node ni `node_modules`.
 
 ```bash
-docker build -t pedidos360-front:1.0.0 .
-docker run --rm -p 8080:80 pedidos360-front:1.0.0    # http://localhost:8080
-docker run --rm -p 443:443 pedidos360-front:1.0.0    # https://<host>
+docker build -t frontend-angular:1.0.0 .
+docker run --rm -p 8080:80 frontend-angular:1.0.0    # http://localhost:8080
+docker run --rm -p 443:443 frontend-angular:1.0.0    # https://<host>
 ```
 
 ### Por qué el contenedor sirve HTTPS
@@ -56,7 +56,7 @@ sirve por 443, y el puerto 80 redirige a `https` salvo en localhost. El host
 del certificado se controla con un `ARG`:
 
 ```bash
-docker build --build-arg TLS_HOST=3.213.91.126 -t pedidos360-front:1.0.0 .
+docker build --build-arg TLS_HOST=3.213.91.126 -t frontend-angular:1.0.0 .
 ```
 
 Al ser autofirmado el navegador advierte una vez; aceptando la excepción el

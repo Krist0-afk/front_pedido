@@ -22,7 +22,7 @@ export const environment = {
     /** Ruta del API Gateway que enruta al microservicio compras (EC2:8082). */
     compras: '/api/v1/compras',
  
-    scopes: ['api://c6445b4c-7863-42ac-a620-2fa3b5ea58d8/desarrollo'],
+    scopes: ['api://c6445b4c-7863-42ac-a620-2fa3b5ea58d8/desarrollo/wri&rea'],
   },
 
   /** App Role exigido por el microservicio de compras (`.hasRole("User")`). */
