@@ -17,7 +17,7 @@ export const routes: Routes = [
   },
   {
     path: 'perfil',
-    title: 'Mi token | Pedidos360',
+    title: 'Mi cuenta | Pedidos360',
     canActivate: [autenticacionGuard],
     loadComponent: () => import('./features/perfil/perfil').then((m) => m.Perfil),
   },

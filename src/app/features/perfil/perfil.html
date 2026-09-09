@@ -1,114 +1,71 @@
-<h1>Mi token</h1>
-<p class="texto-suave">
-  Claims que Azure Entra ID emitió para esta sesión. El access token es el que
-  viaja en el header <code>Authorization</code> hacia el API Gateway.
-</p>
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 pb-24">
+  <div class="flex items-center gap-3 mb-6">
+    <a
+      routerLink="/"
+      class="w-9 h-9 rounded-xl border border-gray-200 bg-white hover:border-emerald-300 text-gray-600 hover:text-emerald-700 flex items-center justify-center transition-colors"
+    >
+      <app-icon name="arrow-left" class="w-4 h-4" />
+    </a>
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight text-gray-900">Mi cuenta</h1>
+      <p class="text-xs text-gray-500 mt-0.5">Los datos con los que compras en Pedidos 360.</p>
+    </div>
+  </div>
 
-<section class="tarjeta">
-  <h2>Resumen de la sesión</h2>
-  <table class="tabla-claims">
-    <tbody>
-      <tr>
-        <th>Nombre</th>
-        <td>{{ auth.nombre() || '—' }}</td>
-      </tr>
-      <tr>
-        <th>Correo</th>
-        <td>{{ auth.email() || '—' }}</td>
-      </tr>
-      <tr>
-        <th>Roles (claim <code>roles</code>)</th>
-        <td>
-          @if (auth.roles().length) {
-            <span class="apilado">
-              @for (rol of auth.roles(); track rol) {
-                <span class="chip">{{ rol }}</span>
-              }
-            </span>
-          } @else {
-            <span class="chip chip-neutro">sin App Roles</span>
-          }
-        </td>
-      </tr>
-      <tr>
-        <th>Scopes (claim <code>scp</code>)</th>
-        <td>
-          @if (auth.scopes().length) {
-            <span class="apilado">
-              @for (scope of auth.scopes(); track scope) {
-                <span class="chip">{{ scope }}</span>
-              }
-            </span>
-          } @else {
-            <span class="chip chip-neutro">sin scopes</span>
-          }
-        </td>
-      </tr>
-      <tr>
-        <th>Audiencia (<code>aud</code>)</th>
-        <td>{{ auth.audiencia() || '—' }}</td>
-      </tr>
-      <tr>
-        <th>Emisor (<code>iss</code>)</th>
-        <td>{{ auth.emisor() || '—' }}</td>
-      </tr>
-      <tr>
-        <th>Expira (<code>exp</code>)</th>
-        <td>{{ auth.expiracion() ? (auth.expiracion() | date: 'medium') : '—' }}</td>
-      </tr>
-    </tbody>
-  </table>
+  <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5">
+    <div class="flex items-center gap-4">
+      <span
+        class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-lg flex items-center justify-center shrink-0"
+      >
+        {{ iniciales() || '?' }}
+      </span>
+      <div class="min-w-0">
+        <h2 class="font-extrabold text-gray-900 truncate">{{ auth.nombre() || 'Sin nombre' }}</h2>
+        <p class="text-xs text-gray-500 truncate">{{ auth.email() }}</p>
+      </div>
+    </div>
 
-  <div class="apilado acciones">
+    <p class="text-[11px] text-gray-500 mt-4 flex items-center gap-1.5">
+      <app-icon name="shield-check" class="w-3.5 h-3.5 text-emerald-700" />
+      Inicias sesión con tu cuenta Microsoft. Pedidos 360 nunca ve tu contraseña.
+    </p>
+  </section>
+
+  <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 mt-6">
+    <h2 class="font-extrabold text-gray-900 text-base mb-4">Qué puedes hacer</h2>
+
+    @if (permisos().length) {
+      <ul class="space-y-2.5">
+        @for (permiso of permisos(); track permiso) {
+          <li class="flex items-start gap-2.5 text-sm text-gray-700">
+            <app-icon name="check-circle" class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+            <span>{{ permiso }}</span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-200 p-4">
+        <app-icon name="alert" class="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+        <p class="text-sm text-amber-900">
+          Tu cuenta todavía no está habilitada para comprar. Escríbele al administrador de
+          Pedidos 360 para que active tus permisos; después cierra sesión y vuelve a entrar.
+        </p>
+      </div>
+    }
+  </section>
+
+  <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 mt-6">
+    <h2 class="font-extrabold text-gray-900 text-base">Sesión</h2>
+    <p class="text-xs text-gray-500 mt-1">
+      Cerrar sesión te desconecta también de tu cuenta Microsoft en este navegador.
+    </p>
     <button
       type="button"
-      class="boton boton-primario"
-      [disabled]="!auth.accessToken()"
-      (click)="copiarToken()"
+      (click)="cerrarSesion()"
+      class="inline-flex items-center gap-2 mt-4 px-4 py-2.5 rounded-xl border border-gray-200 hover:border-rose-300 hover:text-rose-600 text-gray-700 font-bold text-xs transition-colors cursor-pointer"
     >
-      {{ copiado() ? 'Copiado' : 'Copiar access token' }}
+      <app-icon name="log-out" class="w-4 h-4" />
+      <span>Cerrar sesión</span>
     </button>
-    <button type="button" class="boton boton-neutro" (click)="refrescar()">
-      Renovar token
-    </button>
-  </div>
-</section>
-
-<section class="tarjeta bloque">
-  <h2>Access token</h2>
-  <p class="texto-suave">
-    Lo valida el API Gateway y, de nuevo, cada microservicio Spring Boot.
-  </p>
-  @if (claimsAccessToken().length) {
-    <table class="tabla-claims">
-      <tbody>
-        @for (claim of claimsAccessToken(); track claim.clave) {
-          <tr>
-            <th>{{ claim.clave }}</th>
-            <td>{{ claim.valor }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  } @else {
-    <p class="texto-suave">
-      Todavía no hay access token. Si acabas de iniciar sesión, pulsa
-      «Renovar token».
-    </p>
-  }
-</section>
-
-<section class="tarjeta bloque">
-  <h2>ID token</h2>
-  <p class="texto-suave">Identifica al usuario ante el frontend. No se envía al backend.</p>
-  <table class="tabla-claims">
-    <tbody>
-      @for (claim of claimsIdToken(); track claim.clave) {
-        <tr>
-          <th>{{ claim.clave }}</th>
-          <td>{{ claim.valor }}</td>
-        </tr>
-      }
-    </tbody>
-  </table>
-</section>
+  </section>
+</div>

@@ -1,61 +1,42 @@
-import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
-
-interface Claim {
-  clave: string;
-  valor: string;
-}
+import { Icon } from '../../shared/icon/icon';
 
 /**
- * Inspector del token. Muestra qué emitió el tenant y qué claims usan el API
- * Gateway y los microservicios para autorizar. Es la vista que evidencia que
- * el flujo OIDC entrega los tokens esperados.
+ * Qué habilita cada App Role, dicho en términos de la tienda. El usuario no
+ * tiene por qué saber que detrás hay un claim `roles`.
  */
+const PERMISOS: Record<string, string> = {
+  User: 'Comprar y hacer seguimiento de tus pedidos',
+  Admin: 'Administrar el catálogo de Pedidos 360',
+};
+
 @Component({
   selector: 'app-perfil',
-  imports: [DatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Icon, RouterLink],
   templateUrl: './perfil.html',
-  styleUrl: './perfil.css',
 })
 export class Perfil {
   protected readonly auth = inject(AuthService);
 
-  protected readonly copiado = signal(false);
+  protected readonly iniciales = computed(() =>
+    this.auth
+      .nombre()
+      .split(' ')
+      .filter((parte) => parte.length > 0)
+      .slice(0, 2)
+      .map((parte) => parte.charAt(0).toUpperCase())
+      .join(''),
+  );
 
-  protected readonly claimsIdToken = computed(() => aClaims(this.auth.idTokenClaims()));
-  protected readonly claimsAccessToken = computed(() => aClaims(this.auth.accessTokenClaims()));
+  protected readonly permisos = computed(() =>
+    this.auth.roles().map((rol) => PERMISOS[rol] ?? rol),
+  );
 
-  /** Copia el access token para reutilizarlo en Postman o curl. */
-  protected async copiarToken(): Promise<void> {
-    const token = this.auth.accessToken();
-    if (!token) {
-      return;
-    }
-
-    await navigator.clipboard.writeText(token);
-    this.copiado.set(true);
-    setTimeout(() => this.copiado.set(false), 2500);
+  protected cerrarSesion(): void {
+    this.auth.logout();
   }
-
-  protected refrescar(): void {
-    this.auth.refrescarAccessToken();
-  }
-}
-
-function aClaims(claims: Record<string, unknown>): Claim[] {
-  return Object.entries(claims)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([clave, valor]) => ({ clave, valor: formatear(valor) }));
-}
-
-function formatear(valor: unknown): string {
-  if (Array.isArray(valor)) {
-    return valor.join(', ');
-  }
-  if (valor !== null && typeof valor === 'object') {
-    return JSON.stringify(valor);
-  }
-  return String(valor);
 }
