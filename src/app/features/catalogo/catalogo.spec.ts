@@ -73,6 +73,18 @@ describe('Catalogo', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('/catalogo/public');
   });
 
+  it('avisa cuando el microservicio responde pero su catálogo está vacío', () => {
+    const fixture = configurar({
+      apiSinConfigurar: false,
+      listarPublico: () => of([]),
+      listarPrivado: () => of([]),
+    } as Partial<CatalogoService>);
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('su catálogo está vacío');
+    expect(texto).toContain('Burger 360 Doble Cheddar');
+  });
+
   it('cae al catálogo local y avisa cuando el backend falla', () => {
     const fixture = configurar({
       apiSinConfigurar: false,

@@ -34,6 +34,17 @@
         Reintentar
       </button>
     </div>
+  } @else if (catalogoVacio()) {
+    <div
+      class="mb-6 flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-xs text-sky-900"
+    >
+      <app-icon name="package" class="w-4 h-4 text-sky-600" />
+      <span>
+        El microservicio respondió correctamente en
+        <code class="font-mono font-bold">{{ endpointUsado() }}</code>, pero su
+        catálogo está vacío. Abajo se muestran los productos de demostración.
+      </span>
+    </div>
   } @else if (endpointUsado()) {
     <div
       class="mb-6 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-900"

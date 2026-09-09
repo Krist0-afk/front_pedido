@@ -30,6 +30,36 @@ npm run build      # build de producción en dist/
 npm test           # pruebas unitarias (Vitest)
 ```
 
+## Docker
+
+La imagen se construye en dos etapas: `node:22-alpine` compila el bundle y
+`nginx:stable-alpine` sirve los estáticos resultantes. La imagen final no
+lleva Node ni `node_modules`.
+
+```bash
+docker build -t pedidos360-front:1.0.0 .
+docker run --rm -p 8080:80 pedidos360-front:1.0.0   # http://localhost:8080
+```
+
+`nginx.conf` resuelve dos cosas que un servidor de estáticos por defecto no
+hace bien con Angular:
+
+- **Fallback de rutas.** `/carrito` y `/perfil` no existen como archivos: se
+  devuelve `index.html` para que el router los resuelva. Sin esto, recargar en
+  esas rutas o volver del redirect de Entra ID daría 404.
+- **Caché.** Los bundles llevan hash en el nombre y se cachean un año;
+  `index.html` no se cachea nunca, para que un despliegue nuevo se vea de
+  inmediato.
+
+La configuración del `environment.ts` (URL del API Gateway, `clientId`,
+`redirectUri`) se compila **dentro** del bundle. Cambiarla exige reconstruir la
+imagen; no se puede inyectar por variable de entorno en tiempo de ejecución.
+
+El contenedor expone **HTTP en el puerto 80**. Entra ID solo acepta redirect
+URIs `https` fuera de `localhost`, así que en el despliegue real el TLS tiene
+que terminar delante del contenedor y el origen resultante debe coincidir
+exactamente con `msal.redirectUri`.
+
 ## Configuración
 
 Toda la configuración vive en `src/environments/`:

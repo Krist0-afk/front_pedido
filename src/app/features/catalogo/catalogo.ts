@@ -49,6 +49,8 @@ export class Catalogo implements OnInit {
   protected readonly error = signal<string | null>(null);
   /** Endpoint que sirvió los datos actuales, o `null` si son del catálogo local. */
   protected readonly endpointUsado = signal<string | null>(null);
+  /** El microservicio respondió bien, pero sin productos cargados. */
+  protected readonly catalogoVacio = signal(false);
   protected readonly productos = signal<ProductoVista[]>(CATALOGO_DEMO);
 
   protected readonly apiSinConfigurar = this.catalogoApi.apiSinConfigurar;
@@ -85,6 +87,7 @@ export class Catalogo implements OnInit {
 
     this.cargando.set(true);
     this.error.set(null);
+    this.catalogoVacio.set(false);
 
     // Con sesión iniciada se golpea el endpoint protegido: así la propia
     // pantalla demuestra que el JWT de Entra ID pasa la validación del backend.
@@ -97,6 +100,9 @@ export class Catalogo implements OnInit {
       next: (productos) => {
         this.cargando.set(false);
         this.endpointUsado.set(autenticado ? '/catalogo/privado' : '/catalogo/public');
+        // Un catálogo vacío no es un error, pero tampoco son datos reales: hay
+        // que decirlo, o el aviso verde mentiría sobre productos de demostración.
+        this.catalogoVacio.set(productos.length === 0);
         if (productos.length > 0) {
           this.productos.set(productos);
         }
@@ -104,6 +110,7 @@ export class Catalogo implements OnInit {
       error: (e: unknown) => {
         this.cargando.set(false);
         this.endpointUsado.set(null);
+        this.catalogoVacio.set(false);
         this.error.set(describirError(e));
         this.productos.set(CATALOGO_DEMO);
       },
