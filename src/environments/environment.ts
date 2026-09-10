@@ -8,9 +8,8 @@ export const environment = {
     tenantId: '8ea291c8-4670-4598-8f0f-b5e216b5b755',
     /** Authority del tenant: emite los tokens. */
     authority:'https://login.microsoftonline.com/8ea291c8-4670-4598-8f0f-b5e216b5b755',
-    /** Debe estar registrada como Redirect URI (tipo SPA) en el portal. */
-    redirectUri: 'https://3.213.91.126/',
-    postLogoutRedirectUri: 'https://3.213.91.126/',
+    redirectUri: `${window.location.origin}/`,
+    postLogoutRedirectUri: `${window.location.origin}/`,
   },
 
   api: {
