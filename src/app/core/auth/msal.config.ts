@@ -84,7 +84,15 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
       [...environment.api.scopes],
     ],
     [
-      `${environment.api.baseUrl}${environment.api.compras}/*`,
+      `${environment.api.baseUrl}${environment.api.compras}*`,
+      [...environment.api.scopes],
+    ],
+    [
+      `${environment.api.baseUrl}${environment.api.ordenes}*`,
+      [...environment.api.scopes],
+    ],
+    [
+      `${environment.api.baseUrl}${environment.api.usuarios}*`,
       [...environment.api.scopes],
     ],
   ]);

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CATALOGO_DEMO } from '../data/catalogo-demo';
 import { Producto, ProductoVista } from '../models/producto.model';
@@ -28,6 +28,20 @@ export class CatalogoService {
   /** Endpoint que exige un JWT válido en el backend. */
   listarPrivado(): Observable<ProductoVista[]> {
     return this.http.get<Producto[]>(`${this.base}/privado`).pipe(map((ps) => ps.map(aVista)));
+  }
+
+  /**
+   * Obtiene el catálogo completo para resolver metadatos de productos,
+   * utilizando los endpoints del backend o el catálogo demo de respaldo.
+   */
+  obtenerCatalogo(): Observable<ProductoVista[]> {
+    if (this.apiSinConfigurar) {
+      return of(CATALOGO_DEMO);
+    }
+    return this.listarPrivado().pipe(
+      catchError(() => this.listarPublico()),
+      catchError(() => of(CATALOGO_DEMO)),
+    );
   }
 }
 

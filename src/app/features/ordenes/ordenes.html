@@ -1,0 +1,233 @@
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-24">
+  <!-- Encabezado de página -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <a
+        routerLink="/"
+        class="w-9 h-9 rounded-xl border border-gray-200 bg-white hover:border-emerald-300 text-gray-600 hover:text-emerald-700 flex items-center justify-center transition-colors"
+      >
+        <app-icon name="arrow-left" class="w-4 h-4" />
+      </a>
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-gray-900">Mis Órdenes</h1>
+        <p class="text-xs text-gray-500 mt-0.5">
+          Pedidos procesados por Backend-cloud-ordenes y notificados vía RabbitMQ.
+        </p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        [disabled]="cargando()"
+        (click)="cargarOrdenes()"
+        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 bg-white hover:border-emerald-300 text-xs font-semibold text-gray-700 hover:text-emerald-800 transition-colors cursor-pointer shadow-xs disabled:opacity-60"
+      >
+        <app-icon name="refresh" class="w-3.5 h-3.5" [class]="cargando() ? 'animate-spin' : ''" />
+        <span>{{ cargando() ? 'Actualizando…' : 'Actualizar' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumen estadístico -->
+  @if (!cargando() && !error() && ordenes().length > 0) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-4 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+          <app-icon name="package" class="w-6 h-6" />
+        </div>
+        <div>
+          <span class="text-xs text-gray-500 font-medium">Total de órdenes</span>
+          <p class="text-xl font-extrabold text-gray-900">{{ cantidadOrdenes() }} pedidos</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-4 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+          <app-icon name="sparkles" class="w-6 h-6" />
+        </div>
+        <div>
+          <span class="text-xs text-gray-500 font-medium">Gasto acumulado</span>
+          <p class="text-xl font-extrabold text-emerald-800 font-mono">
+            {{ totalGastado() | currency: 'CLP' : '$' : '1.0-0' }}
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Estado de Carga -->
+  @if (cargando()) {
+    <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-12 text-center">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 mb-3 animate-pulse">
+        <app-icon name="refresh" class="w-6 h-6 animate-spin" />
+      </div>
+      <h3 class="text-sm font-bold text-gray-900">Consultando tus órdenes…</h3>
+      <p class="text-xs text-gray-500 mt-1">Conectando con Backend-cloud-ordenes a través del API Gateway.</p>
+    </div>
+  }
+
+  <!-- Estado de Error -->
+  @if (!cargando() && error()) {
+    <div class="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-rose-100 text-rose-600 mb-3">
+        <app-icon name="alert" class="w-6 h-6" />
+      </div>
+      <h3 class="text-sm font-bold text-rose-900">No se pudieron cargar las órdenes</h3>
+      <p class="text-xs text-rose-700 mt-1 max-w-md mx-auto">{{ error() }}</p>
+      <button
+        type="button"
+        (click)="cargarOrdenes()"
+        class="mt-4 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+      >
+        Reintentar consulta
+      </button>
+    </div>
+  }
+
+  <!-- Estado Vacío (Sin Órdenes) -->
+  @if (!cargando() && !error() && ordenes().length === 0) {
+    <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-12 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 text-gray-400 mb-4">
+        <app-icon name="bag" class="w-8 h-8" />
+      </div>
+      <h3 class="text-base font-extrabold text-gray-900">Aún no tienes órdenes registradas</h3>
+      <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+        Tus pedidos completados se guardarán en la base de datos de órdenes y emitirán notificaciones automáticas.
+      </p>
+      <a
+        routerLink="/"
+        class="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md shadow-emerald-900/15 transition-all cursor-pointer"
+      >
+        <span>Explorar Catálogo</span>
+        <app-icon name="arrow-right" class="w-4 h-4" />
+      </a>
+    </div>
+  }
+
+  <!-- Lista de Órdenes -->
+  @if (!cargando() && !error() && ordenes().length > 0) {
+    <div class="space-y-4">
+      @for (orden of ordenes(); track orden.id) {
+        <article
+          class="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden transition-all hover:border-emerald-200"
+        >
+          <!-- Encabezado de la Tarjeta de Orden (Accesible) -->
+          <button
+            type="button"
+            (click)="alternarExpansion(orden.id)"
+            class="w-full text-left p-5 flex flex-wrap items-center justify-between gap-3 cursor-pointer bg-gradient-to-r from-gray-50/50 to-white hover:bg-gray-50/80 transition-colors focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20"
+            [attr.aria-expanded]="ordenExpandida() === orden.id"
+          >
+            <div class="flex items-center gap-3">
+              <span
+                class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center text-xs shrink-0"
+              >
+                #{{ orden.id }}
+              </span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-extrabold text-gray-900">
+                    Orden #{{ orden.id }}
+                  </h3>
+                  <span
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"
+                  >
+                    <app-icon name="check-circle" class="w-3 h-3 text-emerald-600" />
+                    Procesada
+                  </span>
+                </div>
+                <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                  <app-icon name="clock" class="w-3 h-3 text-gray-400" />
+                  <span>{{ orden.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  <span class="text-gray-300">•</span>
+                  <span>{{ orden.items.length }} {{ orden.items.length === 1 ? 'ítem' : 'ítems' }}</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold block">Total</span>
+                <span class="text-base font-extrabold text-emerald-800 font-mono">
+                  {{ orden.total | currency: 'CLP' : '$' : '1.0-0' }}
+                </span>
+              </div>
+              <span
+                class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:text-emerald-700 transition-colors shrink-0"
+                aria-hidden="true"
+              >
+                <app-icon
+                  name="chevron-down"
+                  class="w-4 h-4 transition-transform duration-200"
+                  [class]="ordenExpandida() === orden.id ? 'rotate-180' : ''"
+                />
+              </span>
+            </div>
+          </button>
+
+          <!-- Banner Event-Driven / RabbitMQ Notificación -->
+          <div class="px-5 py-2.5 bg-emerald-50/60 border-t border-b border-emerald-100/80 flex flex-wrap items-center justify-between gap-2 text-[11px] text-emerald-900">
+            <div class="flex items-center gap-1.5">
+              <app-icon name="sparkles" class="w-3.5 h-3.5 text-emerald-700" />
+              <span>
+                <strong>RabbitMQ:</strong> Evento <code>orden.creada.key</code> emitido. Comprobante procesado por <code>backend-notificaciones</code>.
+              </span>
+            </div>
+            <span class="text-emerald-700 text-[10px] font-mono">
+              Destinatario: {{ orden.usuarioEmail }}
+            </span>
+          </div>
+
+          <!-- Detalle de Ítems (Desplegable) -->
+          @if (ordenExpandida() === orden.id) {
+            <div class="p-5 bg-white border-t border-gray-100 animate-fadeIn">
+              <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
+                Productos en esta orden
+              </h4>
+
+              <div class="divide-y divide-gray-100">
+                @for (item of orden.items; track item.id ?? item.productoId) {
+                  <div class="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0">
+                    <div class="flex items-center gap-3 min-w-0">
+                      @if (item.producto?.image) {
+                        <img
+                          [src]="item.producto?.image"
+                          [alt]="item.producto?.name ?? 'Producto'"
+                          class="w-11 h-11 rounded-xl object-cover border border-gray-100 shrink-0"
+                        />
+                      } @else {
+                        <div
+                          class="w-11 h-11 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center shrink-0"
+                        >
+                          <app-icon name="package" class="w-5 h-5 text-gray-400" />
+                        </div>
+                      }
+
+                      <div class="min-w-0">
+                        <p class="text-xs font-bold text-gray-900 truncate">
+                          {{ item.producto?.name ?? ('Producto #' + item.productoId) }}
+                        </p>
+                        <p class="text-[11px] text-gray-500">
+                          Cantidad: <span class="font-bold text-gray-700">{{ item.cantidad }}</span>
+                          <span class="text-gray-300 mx-1">•</span>
+                          Unitario: {{ item.precioUnitario | currency: 'CLP' : '$' : '1.0-0' }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="text-right shrink-0">
+                      <span class="text-xs font-extrabold text-gray-900 font-mono">
+                        {{ (item.precioUnitario * item.cantidad) | currency: 'CLP' : '$' : '1.0-0' }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </article>
+      }
+    </div>
+  }
+</div>

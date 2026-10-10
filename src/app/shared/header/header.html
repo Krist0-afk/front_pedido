@@ -84,6 +84,13 @@
         </a>
         @if (auth.autenticado()) {
           <a
+            routerLink="/ordenes"
+            routerLinkActive="bg-white text-emerald-800 font-semibold shadow-xs"
+            class="px-3 py-1.5 rounded-lg transition-all hover:text-emerald-700"
+          >
+            Mis órdenes
+          </a>
+          <a
             routerLink="/perfil"
             routerLinkActive="bg-white text-emerald-800 font-semibold shadow-xs"
             class="px-3 py-1.5 rounded-lg transition-all hover:text-emerald-700"

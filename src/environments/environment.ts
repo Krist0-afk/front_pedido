@@ -20,6 +20,10 @@ export const environment = {
     catalogo: '/api/v1/catalogo',
     /** Ruta del API Gateway que enruta al microservicio compras (EC2:8082). */
     compras: '/api/v1/compras',
+    /** Ruta del API Gateway que enruta al microservicio ordenes (EC2:8086). */
+    ordenes: '/api/v1/ordenes',
+    /** Ruta del API Gateway que enruta al microservicio usuarios (EC2:8084). */
+    usuarios: '/api/v1/usuarios',
  
     scopes: ['api://c6445b4c-7863-42ac-a620-2fa3b5ea58d8/desarrollo/wri&rea'],
   },

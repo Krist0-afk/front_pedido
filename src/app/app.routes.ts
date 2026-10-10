@@ -22,6 +22,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/perfil/perfil').then((m) => m.Perfil),
   },
   {
+    path: 'ordenes',
+    title: 'Mis órdenes | Pedidos360',
+    canActivate: [autenticacionGuard, rolGuard(environment.rolCompras)],
+    loadComponent: () => import('./features/ordenes/ordenes').then((m) => m.Ordenes),
+  },
+  {
     path: 'no-autorizado',
     title: 'Sin permisos | Pedidos360',
     loadComponent: () =>

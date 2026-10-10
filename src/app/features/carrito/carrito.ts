@@ -1,12 +1,13 @@
 import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth/auth.service';
 import { DIRECCIONES_DEMO } from '../../core/data/catalogo-demo';
 import { Pedido } from '../../core/models/pedido.model';
 import { ComprasService } from '../../core/services/compras.service';
+import { OrdenesService } from '../../core/services/ordenes.service';
 import { describirError } from '../../core/services/http-error.util';
 import { CarritoStore } from '../../core/state/carrito.store';
 import { UiStore } from '../../core/state/ui.store';
@@ -24,6 +25,7 @@ export class Carrito {
   protected readonly carrito = inject(CarritoStore);
   protected readonly auth = inject(AuthService);
   private readonly compras = inject(ComprasService);
+  private readonly ordenes = inject(OrdenesService);
   private readonly ui = inject(UiStore);
   private readonly router = inject(Router);
 
@@ -74,17 +76,23 @@ export class Carrito {
     this.enviando.set(true);
     this.error.set(null);
 
-    forkJoin(pedidos.map((pedido) => this.compras.agregarAlCarrito(pedido))).subscribe({
-      next: () => {
-        this.enviando.set(false);
-        this.carrito.vaciar();
-        this.ui.avisar('🎉 ¡Pedido recibido! Tu repartidor ya está en camino.');
-        this.router.navigate(['/']);
-      },
-      error: (e: unknown) => {
-        this.enviando.set(false);
-        this.error.set(describirError(e));
-      },
-    });
+    // 1. Envía las líneas al microservicio de compras
+    // 2. Orquesta la completación de la orden en Backend-cloud-ordenes (dispara evento RabbitMQ para notificaciones)
+    forkJoin(pedidos.map((pedido) => this.compras.agregarAlCarrito(pedido)))
+      .pipe(switchMap(() => this.ordenes.completarOrden()))
+      .subscribe({
+        next: (orden) => {
+          this.enviando.set(false);
+          this.carrito.vaciar();
+          this.ui.avisar(
+            `🎉 ¡Orden #${orden.id ?? ''} creada con éxito! Comprobante emitido vía RabbitMQ.`,
+          );
+          this.router.navigate(['/ordenes']);
+        },
+        error: (e: unknown) => {
+          this.enviando.set(false);
+          this.error.set(describirError(e));
+        },
+      });
   }
 }
