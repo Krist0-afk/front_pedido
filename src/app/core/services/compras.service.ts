@@ -25,4 +25,9 @@ export class ComprasService {
   agregarAlCarrito(pedido: Pedido): Observable<Pedido> {
     return this.http.post<Pedido>(`${this.base}/carrito`, pedido);
   }
+
+  /** Elimina los pedidos pendientes del usuario autenticado. */
+  vaciarCarrito(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/carrito`);
+  }
 }

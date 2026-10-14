@@ -47,7 +47,13 @@ export class CarritoStore {
     return this._items().find((item) => item.product.id === productoId)?.quantity ?? 0;
   }
 
+  /** Máximo que se puede pedir según el stock (los productos demo no tienen límite). */
+  limiteDe(producto: ProductoVista): number {
+    return producto.stock ?? Number.POSITIVE_INFINITY;
+  }
+
   agregar(producto: ProductoVista): void {
+    if (this.cantidadDe(producto.id) >= this.limiteDe(producto)) return;
     this._items.update((items) => {
       const existente = items.find((item) => item.product.id === producto.id);
       if (existente) {
@@ -65,7 +71,11 @@ export class CarritoStore {
       return;
     }
     this._items.update((items) =>
-      items.map((item) => (item.product.id === productoId ? { ...item, quantity: cantidad } : item)),
+      items.map((item) =>
+        item.product.id === productoId
+          ? { ...item, quantity: Math.min(cantidad, this.limiteDe(item.product)) }
+          : item,
+      ),
     );
   }
 

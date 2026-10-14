@@ -10,6 +10,9 @@ export function describirError(error: unknown): string {
   }
 
   switch (error.status) {
+    case 400:
+      // Los microservicios responden { "error": "..." }
+      return `Solicitud rechazada (400): ${error.error?.error ?? error.message}`;
     case 0:
       return 'No hubo respuesta del API Gateway. Revisa el invoke URL y que CORS permita este origen (incluido el preflight OPTIONS).';
     case 401:

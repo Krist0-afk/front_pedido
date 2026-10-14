@@ -7,8 +7,10 @@ import { of, throwError } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { Boleta } from '../../core/models/boleta.model';
 import { Orden } from '../../core/models/orden.model';
 import { CatalogoService } from '../../core/services/catalogo.service';
+import { FacturacionService } from '../../core/services/facturacion.service';
 import { OrdenesService } from '../../core/services/ordenes.service';
 import { Ordenes } from './ordenes';
 
@@ -22,6 +24,7 @@ class AuthServiceFalso {
 function configurar(
   ordenesRespuesta: Orden[] | Error,
   catalogoRespuesta = [],
+  boletasRespuesta: Boleta[] | Error = [],
 ) {
   const ordenesMock = {
     obtenerMisOrdenes: () =>
@@ -34,6 +37,13 @@ function configurar(
     obtenerCatalogo: () => of(catalogoRespuesta),
   };
 
+  const facturacionMock = {
+    obtenerMisBoletas: () =>
+      boletasRespuesta instanceof Error
+        ? throwError(() => boletasRespuesta)
+        : of(boletasRespuesta),
+  };
+
   TestBed.configureTestingModule({
     imports: [Ordenes],
     providers: [
@@ -43,6 +53,7 @@ function configurar(
       { provide: MsalBroadcastService, useValue: { inProgress$: of(InteractionStatus.None) } },
       { provide: OrdenesService, useValue: ordenesMock },
       { provide: CatalogoService, useValue: catalogoMock },
+      { provide: FacturacionService, useValue: facturacionMock },
     ],
   });
 
@@ -84,6 +95,54 @@ describe('Ordenes', () => {
     expect(texto).toContain('Orden #101');
     expect(texto).toContain('RabbitMQ');
     expect(texto).toContain('Procesada');
+  });
+
+  it('muestra el detalle de la boleta consultado al microservicio de facturación', () => {
+    const orden: Orden = {
+      id: 7,
+      usuarioEmail: 'gustavo@cloudnative.cl',
+      fecha: '2026-10-10T20:00:00',
+      total: 11900,
+      folioBoleta: 'SII-39-ABC',
+      items: [],
+    };
+    const boleta: Boleta = {
+      id: 1,
+      folioSii: 'SII-39-ABC',
+      ordenId: 7,
+      usuarioEmail: 'gustavo@cloudnative.cl',
+      montoNeto: 10000,
+      iva: 1900,
+      montoTotal: 11900,
+      estado: 'EMITIDA',
+      fechaEmision: '2026-10-10T20:00:05',
+    };
+
+    const fixture = configurar([orden], [], [boleta]);
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(texto).toContain('SII-39-ABC');
+    expect(texto).toContain('EMITIDA');
+    expect(texto).toMatch(/\$1[.,]900/);
+    expect(texto).toMatch(/\$10[.,]000/);
+  });
+
+  it('muestra las órdenes aunque facturación no responda', () => {
+    const orden: Orden = {
+      id: 8,
+      usuarioEmail: 'gustavo@cloudnative.cl',
+      fecha: '2026-10-10T20:00:00',
+      total: 5000,
+      folioBoleta: 'SII-39-XYZ',
+      items: [],
+    };
+
+    const fixture = configurar([orden], [], new Error('facturación caída'));
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(texto).toContain('Orden #8');
+    expect(texto).toContain('SII-39-XYZ');
+    expect(texto).toContain('facturación no respondió');
   });
 
   it('muestra mensaje de error cuando el microservicio falla', () => {

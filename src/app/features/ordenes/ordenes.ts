@@ -15,9 +15,11 @@ import { InteractionStatus } from '@azure/msal-browser';
 import { catchError, filter, forkJoin, of, take } from 'rxjs';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { Boleta } from '../../core/models/boleta.model';
 import { Orden, OrdenItemVista, OrdenVista } from '../../core/models/orden.model';
 import { ProductoVista } from '../../core/models/producto.model';
 import { CatalogoService } from '../../core/services/catalogo.service';
+import { FacturacionService } from '../../core/services/facturacion.service';
 import { describirError } from '../../core/services/http-error.util';
 import { OrdenesService } from '../../core/services/ordenes.service';
 import { Icon } from '../../shared/icon/icon';
@@ -32,6 +34,7 @@ export class Ordenes implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly ordenesService = inject(OrdenesService);
   private readonly catalogoService = inject(CatalogoService);
+  private readonly facturacionService = inject(FacturacionService);
   private readonly msalBroadcast = inject(MsalBroadcastService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -39,6 +42,8 @@ export class Ordenes implements OnInit {
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly ordenExpandida = signal<number | null>(null);
+  /** Facturación no respondió. */
+  protected readonly facturacionCaida = signal(false);
 
   protected readonly totalGastado = computed(() =>
     this.ordenes().reduce((acc, orden) => acc + (orden.total ?? 0), 0),
@@ -63,11 +68,24 @@ export class Ordenes implements OnInit {
     this.cargando.set(true);
     this.error.set(null);
 
+    this.facturacionCaida.set(false);
+
     forkJoin({
       ordenes: this.ordenesService.obtenerMisOrdenes(),
       catalogo: this.catalogoService.obtenerCatalogo().pipe(catchError(() => of([] as ProductoVista[]))),
+      // Si facturación falla las órdenes se muestran igual
+      boletas: this.facturacionService.obtenerMisBoletas().pipe(
+        catchError(() => {
+          this.facturacionCaida.set(true);
+          return of([] as Boleta[]);
+        }),
+      ),
     }).subscribe({
-      next: ({ ordenes, catalogo }) => {
+      next: ({ ordenes, catalogo, boletas }) => {
+        const boletaPorOrden = new Map<number, Boleta>(
+          (boletas ?? []).map((boleta) => [boleta.ordenId, boleta]),
+        );
+
         const mapaCatalogo = new Map<number, ProductoVista>();
         for (const prod of (catalogo ?? [])) {
           if (prod.productoId !== undefined) {
@@ -90,6 +108,7 @@ export class Ordenes implements OnInit {
           return {
             ...orden,
             items: itemsEnriquecidos,
+            boleta: orden.id !== undefined ? boletaPorOrden.get(orden.id) : undefined,
           };
         });
 

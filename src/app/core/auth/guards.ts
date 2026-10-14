@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { MsalGuard } from '@azure/msal-angular';
+import { map } from 'rxjs';
 
 import { AuthService } from './auth.service';
 
@@ -26,10 +27,15 @@ export function rolGuard(rol: string): CanActivateFn {
     const auth = inject(AuthService);
     const router = inject(Router);
 
-    if (auth.tieneRol(rol)) {
-      return true;
-    }
-
-    return router.createUrlTree(['/no-autorizado'], { queryParams: { rol } });
+    // Recién vuelto del login el token todavía no está cargado
+    return auth
+      .asegurarRoles()
+      .pipe(
+        map((roles) =>
+          roles.includes(rol)
+            ? true
+            : router.createUrlTree(['/no-autorizado'], { queryParams: { rol } }),
+        ),
+      );
   };
 }

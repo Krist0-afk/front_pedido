@@ -24,6 +24,8 @@ export const environment = {
     ordenes: '/api/v1/ordenes',
     /** Ruta del API Gateway que enruta al microservicio usuarios (EC2:8084). */
     usuarios: '/api/v1/usuarios',
+    /** Ruta del API Gateway que enruta al microservicio facturación (EC2:8087). */
+    facturacion: '/api/v1/facturacion',
  
     scopes: ['api://c6445b4c-7863-42ac-a620-2fa3b5ea58d8/desarrollo/wri&rea'],
   },

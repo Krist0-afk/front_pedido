@@ -166,17 +166,47 @@
             </div>
           </button>
 
-          <!-- Banner Event-Driven / RabbitMQ Notificación -->
+          <!-- Banner Event-Driven / RabbitMQ -->
           <div class="px-5 py-2.5 bg-emerald-50/60 border-t border-b border-emerald-100/80 flex flex-wrap items-center justify-between gap-2 text-[11px] text-emerald-900">
             <div class="flex items-center gap-1.5">
               <app-icon name="sparkles" class="w-3.5 h-3.5 text-emerald-700" />
               <span>
-                <strong>RabbitMQ:</strong> Evento <code>orden.creada.key</code> emitido. Comprobante procesado por <code>backend-notificaciones</code>.
+                <strong>RabbitMQ:</strong> evento <code>orden.creada</code> publicado en
+                <code>ordenes.topic.exchange</code>: notificaciones envía el correo, catálogo descuenta
+                stock y facturación emite la boleta.
               </span>
             </div>
             <span class="text-emerald-700 text-[10px] font-mono">
               Destinatario: {{ orden.usuarioEmail }}
             </span>
+          </div>
+          <div class="px-5 py-2 border-b border-gray-100 flex items-center gap-1.5 text-[11px]">
+            <app-icon name="package" class="w-3.5 h-3.5 text-gray-500" />
+            @if (orden.boleta; as boleta) {
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-gray-700">
+                <span>
+                  Boleta SII <strong class="font-mono text-emerald-800">{{ boleta.folioSii }}</strong>
+                  <span class="ml-1 bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                    {{ boleta.estado }}
+                  </span>
+                </span>
+                <span>Neto: <span class="font-mono">{{ boleta.montoNeto | currency: 'CLP' : '$' : '1.0-0' }}</span></span>
+                <span>IVA 19%: <span class="font-mono">{{ boleta.iva | currency: 'CLP' : '$' : '1.0-0' }}</span></span>
+                <span>Total: <strong class="font-mono">{{ boleta.montoTotal | currency: 'CLP' : '$' : '1.0-0' }}</strong></span>
+                <span class="text-gray-500">Emitida {{ boleta.fechaEmision | date: 'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            } @else if (orden.folioBoleta) {
+              <span class="text-gray-700">
+                Boleta SII emitida: <strong class="font-mono text-emerald-800">{{ orden.folioBoleta }}</strong>
+                @if (facturacionCaida()) {
+                  <span class="text-gray-400">(detalle no disponible: facturación no respondió)</span>
+                }
+              </span>
+            } @else {
+              <span class="text-amber-700">
+                Boleta en proceso: facturación la emite de forma asíncrona. Pulsa «Actualizar» en unos segundos.
+              </span>
+            }
           </div>
 
           <!-- Detalle de Ítems (Desplegable) -->

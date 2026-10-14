@@ -1,3 +1,4 @@
+import { Boleta } from './boleta.model';
 import { ProductoVista } from './producto.model';
 
 /**
@@ -18,6 +19,8 @@ export interface Orden {
   usuarioEmail: string;
   fecha: string;
   total: number;
+  /** Folio de la boleta SII, llega desde facturación por RabbitMQ. */
+  folioBoleta?: string | null;
   items: OrdenItem[];
 }
 
@@ -31,4 +34,6 @@ export interface OrdenItemVista extends OrdenItem {
 
 export interface OrdenVista extends Omit<Orden, 'items'> {
   items: OrdenItemVista[];
+  /** Boleta obtenida desde el microservicio de facturación. */
+  boleta?: Boleta;
 }

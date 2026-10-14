@@ -1,8 +1,13 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MsalBroadcastService, MsalService } from '@azure/msal-angular';
-import { AccountInfo, InteractionStatus } from '@azure/msal-browser';
-import { filter } from 'rxjs';
+import {
+  AccountInfo,
+  AuthenticationResult,
+  EventType,
+  InteractionStatus,
+} from '@azure/msal-browser';
+import { Observable, catchError, filter, map, of, switchMap, take } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { claimAFecha, decodificarJwt } from './jwt.util';
@@ -91,14 +96,27 @@ export class AuthService {
         }
       });
 
-    // Cualquier evento de MSAL (login, adquisición de token, logout) puede
-    // cambiar la cuenta activa o renovar el access token en caché.
+    // Solo login/logout cambian la cuenta (escuchar todos los eventos generaba un bucle infinito)
     this.broadcast.msalSubject$
-      .pipe(
-        filter(() => this._estado() === InteractionStatus.None),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.sincronizarCuenta());
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((evento) => {
+        switch (evento.eventType) {
+          case EventType.LOGIN_SUCCESS:
+          case EventType.LOGOUT_SUCCESS:
+            if (this._estado() === InteractionStatus.None) {
+              this.sincronizarCuenta();
+            }
+            break;
+          case EventType.ACQUIRE_TOKEN_SUCCESS: {
+            // Token renovado: se toma del evento sin volver a pedirlo
+            const resultado = evento.payload as AuthenticationResult | null;
+            if (resultado?.accessToken) {
+              this._accessToken.set(resultado.accessToken);
+            }
+            break;
+          }
+        }
+      });
   }
 
   /** Inicia sesión con redirect (Authorization Code + PKCE). */
@@ -116,6 +134,34 @@ export class AuthService {
   /** Comprueba un App Role leído desde los claims del token. */
   tieneRol(rol: string): boolean {
     return this.roles().includes(rol);
+  }
+
+  /** Roles del usuario, esperando a que MSAL termine el login y cargue el token. */
+  asegurarRoles(): Observable<string[]> {
+    return this.broadcast.inProgress$.pipe(
+      filter((estado) => estado === InteractionStatus.None),
+      take(1),
+      switchMap(() => {
+        if (this.roles().length > 0) {
+          return of(this.roles());
+        }
+        const cuenta =
+          this.msal.instance.getActiveAccount() ?? this.msal.instance.getAllAccounts()[0] ?? null;
+        if (!cuenta) {
+          return of([]);
+        }
+        this._cuenta.set(cuenta);
+        return this.msal
+          .acquireTokenSilent({ scopes: [...environment.api.scopes], account: cuenta })
+          .pipe(
+            map((resultado) => {
+              this._accessToken.set(resultado.accessToken);
+              return this.roles();
+            }),
+            catchError(() => of(this.roles())),
+          );
+      }),
+    );
   }
 
   /**

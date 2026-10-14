@@ -76,16 +76,19 @@ export class Carrito {
     this.enviando.set(true);
     this.error.set(null);
 
-    // 1. Envía las líneas al microservicio de compras
-    // 2. Orquesta la completación de la orden en Backend-cloud-ordenes (dispara evento RabbitMQ para notificaciones)
-    forkJoin(pedidos.map((pedido) => this.compras.agregarAlCarrito(pedido)))
-      .pipe(switchMap(() => this.ordenes.completarOrden()))
+    // Primero se vacía el carrito del backend por si quedó algo de un intento anterior
+    this.compras
+      .vaciarCarrito()
+      .pipe(
+        switchMap(() => forkJoin(pedidos.map((pedido) => this.compras.agregarAlCarrito(pedido)))),
+        switchMap(() => this.ordenes.completarOrden()),
+      )
       .subscribe({
         next: (orden) => {
           this.enviando.set(false);
           this.carrito.vaciar();
           this.ui.avisar(
-            `🎉 ¡Orden #${orden.id ?? ''} creada con éxito! Comprobante emitido vía RabbitMQ.`,
+            `🎉 ¡Orden #${orden.id ?? ''} creada con éxito! Te enviamos la confirmación por correo.`,
           );
           this.router.navigate(['/ordenes']);
         },
