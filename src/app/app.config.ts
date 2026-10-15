@@ -1,6 +1,11 @@
 import { registerLocaleData } from '@angular/common';
 import localeEsCl from '@angular/common/locales/es-CL';
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  provideHttpClient,
+  withInterceptors,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import {
   ApplicationConfig,
   LOCALE_ID,
@@ -24,6 +29,8 @@ import {
   MSALInstanceFactory,
   MSALInterceptorConfigFactory,
 } from './core/auth/msal.config';
+import { cognitoInterceptor } from './core/auth/cognito.interceptor';
+import { CognitoService } from './core/auth/cognito.service';
 import { routes } from './app.routes';
 
 // Formatea los precios como $7.990, no como $7,990.
@@ -36,8 +43,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
 
     // `withInterceptorsFromDi` habilita el MsalInterceptor, que es un
-    // interceptor basado en clase (HTTP_INTERCEPTORS).
-    provideHttpClient(withInterceptorsFromDi()),
+    // interceptor basado en clase (HTTP_INTERCEPTORS). El de Cognito corre antes.
+    provideHttpClient(withInterceptors([cognitoInterceptor]), withInterceptorsFromDi()),
     { provide: HTTP_INTERCEPTORS, useClass: MsalInterceptor, multi: true },
 
     { provide: MSAL_INSTANCE, useFactory: MSALInstanceFactory },
@@ -49,5 +56,7 @@ export const appConfig: ApplicationConfig = {
 
     // MSAL v3+ exige inicializar la instancia antes de cualquier operación.
     provideAppInitializer(() => inject(MsalService).initialize()),
+    // Completa el login de Cognito (?code=) antes de la primera navegación
+    provideAppInitializer(() => inject(CognitoService).inicializar()),
   ],
 };

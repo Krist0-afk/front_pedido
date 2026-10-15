@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MsalBroadcastService, MsalService } from '@azure/msal-angular';
 import { AccountInfo, EventMessage, EventType, InteractionStatus } from '@azure/msal-browser';
@@ -6,11 +6,12 @@ import { BehaviorSubject, Subject, defer, of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import { AuthService } from './auth.service';
+import { CognitoService } from './cognito.service';
 
 const CUENTA = { username: 'user@pedidos360.cl', name: 'User' } as AccountInfo;
 
 // MSAL falso: setActiveAccount() y acquireTokenSilent() emiten eventos al instante, como el real
-function configurar(token = 'token-de-prueba') {
+function configurar(token = 'token-de-prueba', cognitoClaims: Record<string, unknown> | null = null) {
   const msalSubject$ = new Subject<EventMessage>();
   const inProgress$ = new BehaviorSubject<InteractionStatus>(InteractionStatus.Startup);
   const emitir = (eventType: EventType, payload: unknown = null) =>
@@ -38,6 +39,15 @@ function configurar(token = 'token-de-prueba') {
       provideZonelessChangeDetection(),
       { provide: MsalService, useValue: msalFalso },
       { provide: MsalBroadcastService, useValue: { msalSubject$, inProgress$ } },
+      {
+        provide: CognitoService,
+        useValue: {
+          autenticado: signal(cognitoClaims !== null),
+          claims: signal(cognitoClaims ?? {}),
+          grupos: signal((cognitoClaims?.['cognito:groups'] as string[]) ?? []),
+          idToken: signal(cognitoClaims ? 'id-token-cognito' : null),
+        },
+      },
     ],
   });
 
@@ -77,5 +87,20 @@ describe('AuthService', () => {
 
     inProgress$.next(InteractionStatus.None);
     expect(roles).toEqual(['User']);
+  });
+
+  it('con sesión de Cognito toma correo y roles del ID token', () => {
+    const { auth } = configurar('token-de-prueba', {
+      email: 'aws@pedidos360.cl',
+      'cognito:groups': ['User', 'Admin'],
+    });
+    let roles: string[] | undefined;
+
+    auth.asegurarRoles().subscribe((r) => (roles = r));
+
+    expect(auth.proveedor()).toBe('cognito');
+    expect(auth.email()).toBe('aws@pedidos360.cl');
+    expect(auth.accessToken()).toBe('id-token-cognito');
+    expect(roles).toEqual(['User', 'Admin']);
   });
 });

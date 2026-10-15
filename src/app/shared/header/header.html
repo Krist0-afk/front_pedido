@@ -120,7 +120,7 @@
         }
       </button>
 
-      <!-- Sesión real contra Entra ID vía MSAL -->
+      <!-- Sesión real: Entra ID (MSAL) o AWS Cognito -->
       @if (auth.autenticado()) {
         <div class="flex items-center gap-1">
           <a
@@ -144,15 +144,13 @@
           </button>
         </div>
       } @else {
-        <button
-          type="button"
-          [disabled]="auth.ocupado()"
-          (click)="auth.login()"
-          class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-600 text-emerald-800 hover:bg-emerald-50 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60"
+        <a
+          routerLink="/ingresar"
+          class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-600 text-emerald-800 hover:bg-emerald-50 text-xs font-semibold transition-colors cursor-pointer"
         >
           <app-icon name="user" class="w-3.5 h-3.5" />
-          <span>{{ auth.ocupado() ? 'Conectando…' : 'Ingresar' }}</span>
-        </button>
+          <span>Ingresar</span>
+        </a>
       }
     </div>
   </div>

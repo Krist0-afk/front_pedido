@@ -10,20 +10,24 @@ import {
 import { Observable, catchError, filter, map, of, switchMap, take } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { CognitoService } from './cognito.service';
 import { claimAFecha, decodificarJwt } from './jwt.util';
 
+export type Proveedor = 'azure' | 'cognito';
+
 /**
- * Fachada sobre MSAL para el resto de la aplicación.
+ * Fachada sobre los dos proveedores de login: MSAL (Entra ID) y AWS Cognito.
  *
  * Expone el estado de sesión como signals y centraliza la lectura de roles y
  * scopes desde los claims del token, para que los componentes no dependan
- * directamente de la API de MSAL.
+ * de cuál de los dos se usó.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly msal = inject(MsalService);
   private readonly broadcast = inject(MsalBroadcastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cognito = inject(CognitoService);
 
   private readonly _cuenta = signal<AccountInfo | null>(null);
   private readonly _accessToken = signal<string | null>(null);
@@ -35,27 +39,49 @@ export class AuthService {
   /** `true` mientras MSAL está resolviendo un login, logout o refresco. */
   readonly ocupado = computed(() => this._estado() !== InteractionStatus.None);
 
-  readonly autenticado = computed(() => this._cuenta() !== null);
-  readonly nombre = computed(() => this._cuenta()?.name ?? '');
-  readonly email = computed(() => this._cuenta()?.username ?? '');
+  /** Con qué proveedor inició sesión el usuario, o `null` si no hay sesión. */
+  readonly proveedor = computed<Proveedor | null>(() =>
+    this.cognito.autenticado() ? 'cognito' : this._cuenta() !== null ? 'azure' : null,
+  );
+
+  readonly autenticado = computed(() => this.proveedor() !== null);
+
+  readonly email = computed(() =>
+    this.proveedor() === 'cognito'
+      ? String(this.cognito.claims()['email'] ?? '')
+      : (this._cuenta()?.username ?? ''),
+  );
+
+  readonly nombre = computed(() =>
+    this.proveedor() === 'cognito'
+      ? String(this.cognito.claims()['name'] ?? this.email())
+      : (this._cuenta()?.name ?? ''),
+  );
 
   /** Claims del ID token: identidad del usuario. */
-  readonly idTokenClaims = computed<Record<string, unknown>>(
-    () => (this._cuenta()?.idTokenClaims as Record<string, unknown> | undefined) ?? {},
+  readonly idTokenClaims = computed<Record<string, unknown>>(() =>
+    this.proveedor() === 'cognito'
+      ? this.cognito.claims()
+      : ((this._cuenta()?.idTokenClaims as Record<string, unknown> | undefined) ?? {}),
   );
 
-  /** Claims del access token: es el que viaja al API Gateway. */
+  /** Token que viaja al API Gateway: access token de Entra ID o ID token de Cognito. */
+  readonly accessToken = computed(() =>
+    this.proveedor() === 'cognito' ? this.cognito.idToken() : this._accessToken(),
+  );
+
   readonly accessTokenClaims = computed<Record<string, unknown>>(
-    () => decodificarJwt(this._accessToken()) ?? {},
+    () => decodificarJwt(this.accessToken()) ?? {},
   );
-
-  readonly accessToken = this._accessToken.asReadonly();
 
   /**
-   * App Roles asignados al usuario. Entra ID los emite en el claim `roles`,
-   * el mismo que los microservicios mapean a `ROLE_*` en Spring Security.
+   * App Roles asignados al usuario. Entra ID los emite en el claim `roles` y
+   * Cognito en `cognito:groups`; los microservicios mapean ambos a `ROLE_*`.
    */
   readonly roles = computed<string[]>(() => {
+    if (this.proveedor() === 'cognito') {
+      return this.cognito.grupos();
+    }
     const desdeAccessToken = this.accessTokenClaims()['roles'];
     const desdeIdToken = this.idTokenClaims()['roles'];
     const roles = Array.isArray(desdeAccessToken) ? desdeAccessToken : desdeIdToken;
@@ -119,13 +145,25 @@ export class AuthService {
       });
   }
 
-  /** Inicia sesión con redirect (Authorization Code + PKCE). */
-  login(): void {
-    this.msal.loginRedirect({ scopes: [...environment.api.scopes] });
+  /** Login con Microsoft (Entra ID), redirect con Authorization Code + PKCE. */
+  login(destino = '/'): void {
+    this.msal.loginRedirect({
+      scopes: [...environment.api.scopes],
+      redirectStartPage: `${window.location.origin}${destino}`,
+    });
   }
 
-  /** Cierra la sesión en el navegador y en el tenant de Entra ID. */
+  /** Login con AWS Cognito (Hosted UI). */
+  loginAws(destino = '/'): void {
+    void this.cognito.login(destino);
+  }
+
+  /** Cierra la sesión en el navegador y en el proveedor con el que se entró. */
   logout(): void {
+    if (this.proveedor() === 'cognito') {
+      void this.cognito.logout();
+      return;
+    }
     this.msal.logoutRedirect({
       account: this.msal.instance.getActiveAccount() ?? undefined,
     });
@@ -138,6 +176,9 @@ export class AuthService {
 
   /** Roles del usuario, esperando a que MSAL termine el login y cargue el token. */
   asegurarRoles(): Observable<string[]> {
+    if (this.cognito.autenticado()) {
+      return of(this.cognito.grupos());
+    }
     return this.broadcast.inProgress$.pipe(
       filter((estado) => estado === InteractionStatus.None),
       take(1),

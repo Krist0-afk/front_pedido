@@ -1,0 +1,38 @@
+<div class="max-w-md mx-auto px-4 sm:px-6 py-12">
+  <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 text-center">
+    <span class="w-12 h-12 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+      <app-icon name="user" class="w-6 h-6" />
+    </span>
+    <h1 class="text-xl font-extrabold tracking-tight text-gray-900">Ingresar a Pedidos360</h1>
+    <p class="text-xs text-gray-500 mt-1">Elige con qué cuenta quieres iniciar sesión.</p>
+
+    <div class="mt-6 space-y-3">
+      <button
+        type="button"
+        [disabled]="auth.ocupado()"
+        (click)="conMicrosoft()"
+        class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-sm font-semibold text-gray-800 transition-colors cursor-pointer disabled:opacity-60"
+      >
+        <span class="grid grid-cols-2 gap-0.5 w-4 h-4" aria-hidden="true">
+          <span class="bg-[#f25022]"></span><span class="bg-[#7fba00]"></span>
+          <span class="bg-[#00a4ef]"></span><span class="bg-[#ffb900]"></span>
+        </span>
+        Continuar con Microsoft
+      </button>
+
+      <button
+        type="button"
+        (click)="conAws()"
+        class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#232f3e] hover:bg-[#161e28] text-sm font-semibold text-white transition-colors cursor-pointer"
+      >
+        <span class="font-extrabold text-[#ff9900]" aria-hidden="true">aws</span>
+        Continuar con AWS Cognito
+      </button>
+    </div>
+
+    <p class="text-[11px] text-gray-400 mt-5">
+      Microsoft usa Entra ID y AWS usa un User Pool de Cognito. En ambos casos el API Gateway valida el
+      token JWT antes de llegar a los microservicios.
+    </p>
+  </div>
+</div>

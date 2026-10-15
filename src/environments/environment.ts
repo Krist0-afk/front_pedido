@@ -30,6 +30,17 @@ export const environment = {
     scopes: ['api://c6445b4c-7863-42ac-a620-2fa3b5ea58d8/desarrollo/wri&rea'],
   },
 
+  /** AWS Cognito: segundo proveedor de login (User Pool pedidos360-usuarios). */
+  cognito: {
+    authority: 'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_vZp9ZN52O',
+    clientId: '348a4vr0o6i0ja8u5u7jes7tki',
+    /** Dominio del Hosted UI (también se usa para el logout). */
+    dominio: 'https://pedidos360-316121.auth.us-east-1.amazoncognito.com',
+    redirectUri: `${window.location.origin}/`,
+    /** Prefijo de las rutas del API Gateway protegidas por el autorizador de Cognito. */
+    prefijoApi: '/cognito',
+  },
+
   /** App Role exigido por el microservicio de compras (`.hasRole("User")`). */
   rolCompras: 'User',
 };

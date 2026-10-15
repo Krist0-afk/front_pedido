@@ -21,5 +21,13 @@ export const environment = {
     scopes: ['api://c6445b4c-7863-42ac-a620-2fa3b5ea58d8/desarrollo/wri&rea'],
   },
 
+  cognito: {
+    authority: 'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_vZp9ZN52O',
+    clientId: '348a4vr0o6i0ja8u5u7jes7tki',
+    dominio: 'https://pedidos360-316121.auth.us-east-1.amazoncognito.com',
+    redirectUri: `${window.location.origin}/`,
+    prefijoApi: '/cognito',
+  },
+
   rolCompras: 'User',
 };

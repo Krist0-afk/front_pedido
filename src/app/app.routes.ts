@@ -28,6 +28,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/ordenes/ordenes').then((m) => m.Ordenes),
   },
   {
+    path: 'ingresar',
+    title: 'Ingresar | Pedidos360',
+    loadComponent: () => import('./features/ingresar/ingresar').then((m) => m.Ingresar),
+  },
+  {
     path: 'no-autorizado',
     title: 'Sin permisos | Pedidos360',
     loadComponent: () =>
