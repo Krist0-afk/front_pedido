@@ -97,6 +97,22 @@
           >
             Mi cuenta
           </a>
+          @if (auth.tieneRol('Admin')) {
+            <a
+              routerLink="/admin/dashboard"
+              routerLinkActive="bg-white text-emerald-800 font-semibold shadow-xs"
+              class="px-3 py-1.5 rounded-lg transition-all hover:text-emerald-700"
+            >
+              Dashboard
+            </a>
+            <a
+              routerLink="/admin/kafka"
+              routerLinkActive="bg-white text-emerald-800 font-semibold shadow-xs"
+              class="px-3 py-1.5 rounded-lg transition-all hover:text-emerald-700"
+            >
+              Kafka
+            </a>
+          }
         }
       </div>
 

@@ -26,8 +26,38 @@ export class ComprasService {
     return this.http.post<Pedido>(`${this.base}/carrito`, pedido);
   }
 
+  /** Quita un ítem del carrito (publica CARRITO_QUITADO en Kafka). */
+  quitarDelCarrito(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/carrito/${id}`);
+  }
+
+  /** Valida un cupón (publica CUPON_APLICADO en Kafka). */
+  aplicarCupon(codigo: string, subtotal: number): Observable<CuponRespuesta> {
+    return this.http.post<CuponRespuesta>(`${this.base}/cupon`, { codigo, subtotal });
+  }
+
+  /** Calcula el costo de despacho (publica ENVIO_CALCULADO en Kafka). */
+  calcularEnvio(comuna: string, subtotal: number): Observable<EnvioRespuesta> {
+    return this.http.post<EnvioRespuesta>(`${this.base}/envio`, { comuna, subtotal });
+  }
+
   /** Elimina los pedidos pendientes del usuario autenticado. */
   vaciarCarrito(): Observable<void> {
     return this.http.delete<void>(`${this.base}/carrito`);
   }
+}
+
+export interface CuponRespuesta {
+  codigo: string;
+  valido: boolean;
+  porcentaje: number;
+  descuento: number;
+  mensaje: string;
+}
+
+export interface EnvioRespuesta {
+  comuna: string;
+  costo: number;
+  gratis: boolean;
+  plazo: string;
 }

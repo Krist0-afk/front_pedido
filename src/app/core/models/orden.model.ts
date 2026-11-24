@@ -21,6 +21,9 @@ export interface Orden {
   total: number;
   /** Folio de la boleta SII, llega desde facturación por RabbitMQ. */
   folioBoleta?: string | null;
+  /** PENDIENTE_PAGO, PAGADA o PAGO_RECHAZADO (lo actualiza el evento de pago en Kafka). */
+  estado?: 'PENDIENTE_PAGO' | 'PAGADA' | 'PAGO_RECHAZADO' | null;
+  pagoId?: number | null;
   items: OrdenItem[];
 }
 

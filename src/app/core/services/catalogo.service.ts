@@ -31,6 +31,14 @@ export class CatalogoService {
   }
 
   /**
+   * Abre el detalle de un producto. El backend publica el evento PRODUCTO_VISTO en Kafka
+   * (asociado al usuario si hay sesión, anónimo si no).
+   */
+  verDetalle(productoId: number, conSesion: boolean): Observable<Producto> {
+    return this.http.get<Producto>(`${this.base}/${conSesion ? 'privado' : 'public'}/${productoId}`);
+  }
+
+  /**
    * Obtiene el catálogo completo para resolver metadatos de productos,
    * utilizando los endpoints del backend o el catálogo demo de respaldo.
    */

@@ -17,6 +17,8 @@ import { AuthService } from '../../core/auth/auth.service';
 import { CATALOGO_DEMO } from '../../core/data/catalogo-demo';
 import { ModoCatalogo, ProductoVista } from '../../core/models/producto.model';
 import { CatalogoService } from '../../core/services/catalogo.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
+import { Recomendacion } from '../../core/models/analytics.model';
 import { describirError } from '../../core/services/http-error.util';
 import { CarritoStore } from '../../core/state/carrito.store';
 import { UiStore } from '../../core/state/ui.store';
@@ -49,6 +51,7 @@ const CATEGORIAS_SUPERMERCADO = [
 })
 export class Catalogo implements OnInit {
   private readonly catalogoApi = inject(CatalogoService);
+  private readonly analytics = inject(AnalyticsService);
   private readonly msalBroadcast = inject(MsalBroadcastService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly auth = inject(AuthService);
@@ -66,6 +69,15 @@ export class Catalogo implements OnInit {
   /** El microservicio respondió bien, pero sin productos cargados. */
   protected readonly catalogoVacio = signal(false);
   protected readonly productos = signal<ProductoVista[]>(CATALOGO_DEMO);
+  /** Producto abierto en el detalle (al abrirlo se publica PRODUCTO_VISTO en Kafka). */
+  protected readonly detalle = signal<ProductoVista | null>(null);
+  protected readonly recomendaciones = signal<Recomendacion[]>([]);
+  /** Sugerencias de analítica con la foto y los datos de su tarjeta del catálogo. */
+  protected readonly sugeridos = computed(() =>
+    this.recomendaciones()
+      .map((r) => ({ r, p: this.productos().find((p) => p.productoId === r.productoId) }))
+      .filter((x): x is { r: Recomendacion; p: ProductoVista } => !!x.p),
+  );
 
   protected readonly apiSinConfigurar = this.catalogoApi.apiSinConfigurar;
 
@@ -131,6 +143,7 @@ export class Catalogo implements OnInit {
         if (productos.length > 0) {
           this.productos.set(productos);
         }
+        this.cargarRecomendaciones();
       },
       error: (e: unknown) => {
         this.cargando.set(false);
@@ -140,6 +153,32 @@ export class Catalogo implements OnInit {
         this.productos.set(CATALOGO_DEMO);
       },
     });
+  }
+
+  protected cargarRecomendaciones(): void {
+    if (!this.auth.autenticado()) {
+      return;
+    }
+    this.analytics.recomendaciones(4).subscribe({
+      next: (r) => this.recomendaciones.set(r),
+      error: () => this.recomendaciones.set([]),
+    });
+  }
+
+  protected verDetalle(producto: ProductoVista): void {
+    this.detalle.set(producto);
+    if (producto.productoId === undefined || this.apiSinConfigurar) {
+      return;
+    }
+    this.catalogoApi.verDetalle(producto.productoId, this.auth.autenticado()).subscribe({
+      // Analítica procesa el evento en segundo plano; luego se refrescan las sugerencias
+      next: () => setTimeout(() => this.cargarRecomendaciones(), 1500),
+      error: () => undefined,
+    });
+  }
+
+  protected cerrarDetalle(): void {
+    this.detalle.set(null);
   }
 
   protected cambiarModo(modo: ModoCatalogo): void {

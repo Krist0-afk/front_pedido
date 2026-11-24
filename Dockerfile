@@ -8,11 +8,11 @@ RUN npm run build
 FROM nginx:stable-alpine
 
 # Va como SAN del certificado: los navegadores ignoran el CN.
-ARG TLS_HOST=3.213.91.126
+ARG TLS_HOST=44.207.141.228
 
 # Sin https, MSAL no encuentra crypto.subtle y la app no arranca.
 RUN apk add --no-cache openssl \
- && mkdir -p /etc/nginx/certs \
+ && mkdir -p /etc/nginx/certs /etc/nginx/snippets \
  && if echo "${TLS_HOST}" | grep -Eq '^[0-9]+(\.[0-9]+){3}$'; then \
       SAN="IP:${TLS_HOST},DNS:localhost"; \
     else \
@@ -24,8 +24,11 @@ RUN apk add --no-cache openssl \
       -subj "/CN=${TLS_HOST}" \
       -addext "subjectAltName=${SAN}"
 
+# app.conf es una plantilla: al arrancar, nginx reemplaza ${ANALYTICS_UPSTREAM}
+ENV ANALYTICS_UPSTREAM=127.0.0.1:8091
+ENV NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx/snippets
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY app.conf /etc/nginx/snippets/app.conf
+COPY app.conf /etc/nginx/templates/app.conf.template
 COPY --from=build /app/dist/pedidos360/browser /usr/share/nginx/html
 
 EXPOSE 80 443

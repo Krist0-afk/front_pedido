@@ -4,6 +4,7 @@ export interface Producto {
   nombre: string;
   precio: number;
   stock: number;
+  categoria?: string;
 }
 
 export type ModoCatalogo = 'restaurantes' | 'supermercado';

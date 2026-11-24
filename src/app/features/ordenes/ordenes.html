@@ -209,6 +209,107 @@
             }
           </div>
 
+          <!-- Pago (ms-pago) y estado actualizado por el evento de Kafka -->
+          <div class="px-5 py-2.5 border-b border-gray-100 flex flex-wrap items-center gap-3 text-[11px]">
+            @switch (orden.estado) {
+              @case ('PAGADA') {
+                <span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">PAGADA</span>
+                <span class="text-gray-600">
+                  Pago #{{ orden.pagoId }} confirmado por Kafka (tópico <code>pedidos360.pagos</code>).
+                </span>
+              }
+              @case ('PAGO_RECHAZADO') {
+                <span class="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded">PAGO RECHAZADO</span>
+              }
+              @case ('PENDIENTE_PAGO') {
+                <span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">PENDIENTE DE PAGO</span>
+              }
+            }
+            @if (orden.estado && orden.estado !== 'PAGADA') {
+              <button
+                type="button"
+                (click)="abrirPago(orden.id)"
+                class="ml-auto bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3 py-1.5 rounded-lg"
+              >
+                {{ ordenPagando() === orden.id ? 'Cancelar' : 'Pagar ' + (orden.total | currency: 'CLP' : '$' : '1.0-0') }}
+              </button>
+            }
+          </div>
+          @if (ordenPagando() === orden.id) {
+            <div class="px-5 py-4 bg-gray-50 border-b border-gray-100 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <label class="sm:col-span-2 flex flex-col gap-1">
+                <span class="text-gray-600 font-medium">Número de tarjeta</span>
+                <input
+                  [value]="tarjeta()"
+                  (input)="tarjeta.set(valor($event))"
+                  inputmode="numeric"
+                  autocomplete="cc-number"
+                  class="border border-gray-200 rounded-lg px-3 py-2 font-mono bg-white"
+                />
+              </label>
+              <label class="sm:col-span-2 flex flex-col gap-1">
+                <span class="text-gray-600 font-medium">Titular</span>
+                <input
+                  [value]="titular()"
+                  (input)="titular.set(valor($event))"
+                  autocomplete="cc-name"
+                  class="border border-gray-200 rounded-lg px-3 py-2 bg-white"
+                />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-gray-600 font-medium">Vencimiento (MM/AA)</span>
+                <input
+                  [value]="vencimiento()"
+                  (input)="vencimiento.set(valor($event))"
+                  autocomplete="cc-exp"
+                  class="border border-gray-200 rounded-lg px-3 py-2 font-mono bg-white"
+                />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-gray-600 font-medium">CVV</span>
+                <input
+                  [value]="cvv()"
+                  (input)="cvv.set(valor($event))"
+                  type="password"
+                  inputmode="numeric"
+                  autocomplete="cc-csc"
+                  class="border border-gray-200 rounded-lg px-3 py-2 font-mono bg-white"
+                />
+              </label>
+              <div class="sm:col-span-2 flex items-end">
+                <button
+                  type="button"
+                  (click)="pagar(orden)"
+                  [disabled]="enviandoPago()"
+                  class="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-lg"
+                >
+                  {{ enviandoPago() ? 'Procesando...' : 'Confirmar pago' }}
+                </button>
+              </div>
+              <p class="sm:col-span-4 text-[11px] text-gray-500">
+                Pago simulado. Tarjetas de prueba: <code>4111 1111 1111 1111</code> se aprueba y
+                <code>4000 0000 0000 0002</code> se rechaza por fondos. Si la misma tarjeta se usa más de 3 veces
+                en 10 segundos, el antifraude bloquea el pago.
+              </p>
+            </div>
+          }
+          @if (resultadoPago(); as r) {
+            @if (r.ordenId === orden.id) {
+              <div
+                class="px-5 py-2 border-b border-gray-100 text-[11px]"
+                [class]="
+                  r.tipo === 'ok'
+                    ? 'text-emerald-800 bg-emerald-50'
+                    : r.tipo === 'fraude'
+                      ? 'text-red-800 bg-red-50'
+                      : 'text-amber-800 bg-amber-50'
+                "
+              >
+                {{ r.texto }}
+              </div>
+            }
+          }
+
           <!-- Detalle de Ítems (Desplegable) -->
           @if (ordenExpandida() === orden.id) {
             <div class="p-5 bg-white border-t border-gray-100 animate-fadeIn">

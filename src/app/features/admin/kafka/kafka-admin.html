@@ -1,0 +1,168 @@
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-gray-900">Administración de Kafka</h1>
+      <p class="text-sm text-gray-500">Tópicos, configuración y consumer groups a través de ms-kafka-admin.</p>
+    </div>
+    <button type="button" (click)="recargar()" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 flex items-center gap-1.5">
+      <app-icon name="refresh" class="w-3.5 h-3.5" /> Actualizar
+    </button>
+  </div>
+
+  @if (mensaje(); as m) {
+    <div
+      class="mb-4 text-sm rounded-xl px-4 py-3"
+      [class]="m.tipo === 'ok' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'"
+    >
+      {{ m.texto }}
+    </div>
+  }
+
+  <div class="bg-white border border-gray-100 rounded-2xl p-4 mb-6 flex flex-wrap gap-3 text-xs">
+    <span class="font-semibold text-gray-700">Brokers:</span>
+    @for (b of brokers(); track b.id) {
+      <span class="px-2 py-1 rounded-md" [class]="b.id === controlador() ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'">
+        broker {{ b.id }} · {{ b.host }}:{{ b.puerto }} {{ b.id === controlador() ? '(controlador)' : '' }}
+      </span>
+    } @empty {
+      <span class="text-gray-400">{{ cargando() ? 'Consultando…' : 'Sin conexión con el clúster' }}</span>
+    }
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white border border-gray-100 rounded-2xl p-5">
+      <h2 class="text-sm font-bold text-gray-900 mb-3">Tópicos</h2>
+      <table class="w-full text-xs">
+        <thead class="text-gray-500 text-left">
+          <tr><th class="py-1">Nombre</th><th>Particiones</th><th>Réplicas</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (t of topicos(); track t.nombre) {
+            @if (!esInterno(t.nombre)) {
+              <tr class="border-t border-gray-50">
+                <td class="py-1.5 font-mono">{{ t.nombre }}</td>
+                <td>{{ t.particiones }}</td>
+                <td>{{ t.replicas }}</td>
+                <td class="text-right">
+                  <button type="button" (click)="verTopico(t.nombre)" class="text-emerald-700 font-semibold">Ver</button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+
+      <h3 class="text-xs font-bold text-gray-700 mt-5 mb-2">Crear tópico</h3>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <label class="col-span-2 flex flex-col gap-1">Nombre
+          <input [value]="nombre()" (input)="nombre.set(texto($event))" class="border border-gray-200 rounded-lg px-2 py-1.5 font-mono" />
+        </label>
+        <label class="flex flex-col gap-1">Particiones
+          <input type="number" min="1" max="50" [value]="particiones()" (input)="particiones.set(numero($event))" class="border border-gray-200 rounded-lg px-2 py-1.5" />
+        </label>
+        <label class="flex flex-col gap-1">Réplicas
+          <input type="number" min="1" max="3" [value]="replicas()" (input)="replicas.set(numero($event))" class="border border-gray-200 rounded-lg px-2 py-1.5" />
+        </label>
+        <label class="flex flex-col gap-1">Retención (horas)
+          <input type="number" min="1" [value]="retencionHoras()" (input)="retencionHoras.set(numero($event))" class="border border-gray-200 rounded-lg px-2 py-1.5" />
+        </label>
+        <label class="flex flex-col gap-1">Cleanup policy
+          <select (change)="cleanup.set(texto($event) === 'compact' ? 'compact' : 'delete')" class="border border-gray-200 rounded-lg px-2 py-1.5">
+            <option value="delete" [selected]="cleanup() === 'delete'">delete</option>
+            <option value="compact" [selected]="cleanup() === 'compact'">compact</option>
+          </select>
+        </label>
+        <button type="button" (click)="crear()" class="col-span-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-2 rounded-lg">
+          Crear tópico
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-100 rounded-2xl p-5">
+      <h2 class="text-sm font-bold text-gray-900 mb-3">Consumer groups</h2>
+      <table class="w-full text-xs">
+        <thead class="text-gray-500 text-left">
+          <tr><th class="py-1">Grupo</th><th>Estado</th><th>Miembros</th><th>Lag</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (g of grupos(); track g.grupo) {
+            <tr class="border-t border-gray-50">
+              <td class="py-1.5 font-mono">{{ g.grupo }}</td>
+              <td>{{ g.estado }}</td>
+              <td>{{ g.miembros }}</td>
+              <td [class]="g.lagTotal > 0 ? 'text-amber-700 font-bold' : ''">{{ g.lagTotal }}</td>
+              <td class="text-right">
+                <button type="button" (click)="verGrupo(g.grupo)" class="text-emerald-700 font-semibold">Ver</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="py-2 text-gray-400">Sin consumer groups.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (detalleTopico(); as d) {
+    <div class="mt-6 bg-white border border-gray-100 rounded-2xl p-5 text-xs">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold text-gray-900 font-mono">{{ d.nombre }}</h2>
+        <button type="button" (click)="eliminar(d.nombre)" class="text-red-700 font-semibold flex items-center gap-1">
+          <app-icon name="trash" class="w-3.5 h-3.5" /> Eliminar
+        </button>
+      </div>
+      <table class="w-full mb-4">
+        <thead class="text-gray-500 text-left"><tr><th>Partición</th><th>Líder</th><th>Réplicas</th><th>En sincronía (ISR)</th></tr></thead>
+        <tbody>
+          @for (p of d.particiones; track p.particion) {
+            <tr class="border-t border-gray-50">
+              <td class="py-1">{{ p.particion }}</td><td>broker {{ p.lider }}</td>
+              <td>{{ p.replicas.join(', ') }}</td><td>{{ p.enSincronia.join(', ') }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <h3 class="font-bold text-gray-700 mb-1">Configuración propia del tópico</h3>
+      <div class="flex flex-wrap gap-2 mb-4">
+        @for (c of d.configs | keyvalue; track c.key) {
+          <code class="bg-gray-100 px-2 py-1 rounded">{{ c.key }}={{ c.value }}</code>
+        }
+      </div>
+      <div class="flex flex-wrap items-end gap-3">
+        <label class="flex flex-col gap-1">Retención (horas)
+          <input type="number" min="1" [value]="nuevaRetencionHoras()" (input)="nuevaRetencionHoras.set(numero($event))" class="border border-gray-200 rounded-lg px-2 py-1.5 w-28" />
+        </label>
+        <button type="button" (click)="guardarRetencion(d.nombre)" class="bg-emerald-700 text-white font-semibold px-3 py-2 rounded-lg">Guardar retención</button>
+        <label class="flex flex-col gap-1">Total de particiones
+          <input type="number" [min]="d.particiones.length + 1" [value]="totalParticiones()" (input)="totalParticiones.set(numero($event))" class="border border-gray-200 rounded-lg px-2 py-1.5 w-28" />
+        </label>
+        <button type="button" (click)="aumentarParticiones(d.nombre)" class="border border-gray-200 font-semibold px-3 py-2 rounded-lg">Aumentar particiones</button>
+      </div>
+    </div>
+  }
+
+  @if (detalleGrupo(); as g) {
+    <div class="mt-6 bg-white border border-gray-100 rounded-2xl p-5 text-xs">
+      <h2 class="text-sm font-bold text-gray-900 font-mono mb-1">{{ g.grupo }}</h2>
+      <p class="text-gray-500 mb-3">Estado {{ g.estado }} · coordinador broker {{ g.coordinador }} · lag total {{ g.lagTotal }}</p>
+      <table class="w-full mb-4">
+        <thead class="text-gray-500 text-left"><tr><th>Tópico</th><th>Partición</th><th>Offset confirmado</th><th>Último offset</th><th>Lag</th></tr></thead>
+        <tbody>
+          @for (p of g.particiones; track p.topico + p.particion) {
+            <tr class="border-t border-gray-50">
+              <td class="py-1 font-mono">{{ p.topico }}</td><td>{{ p.particion }}</td>
+              <td>{{ p.offsetConfirmado }}</td><td>{{ p.ultimoOffset }}</td>
+              <td [class]="p.lag > 0 ? 'text-amber-700 font-bold' : ''">{{ p.lag }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <h3 class="font-bold text-gray-700 mb-1">Consumidores (distribución de particiones)</h3>
+      @for (mbr of g.miembros; track mbr.consumidor) {
+        <p class="font-mono text-gray-600">{{ mbr.host }} → {{ mbr.particiones.join(', ') }}</p>
+      } @empty {
+        <p class="text-gray-400">Sin consumidores conectados.</p>
+      }
+    </div>
+  }
+</section>

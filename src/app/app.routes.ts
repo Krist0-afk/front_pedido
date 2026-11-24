@@ -28,6 +28,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/ordenes/ordenes').then((m) => m.Ordenes),
   },
   {
+    path: 'admin/dashboard',
+    title: 'Analítica en tiempo real | Pedidos360',
+    canActivate: [autenticacionGuard, rolGuard(environment.rolAdmin)],
+    loadComponent: () => import('./features/admin/dashboard/dashboard').then((m) => m.Dashboard),
+  },
+  {
+    path: 'admin/kafka',
+    title: 'Administración de Kafka | Pedidos360',
+    canActivate: [autenticacionGuard, rolGuard(environment.rolAdmin)],
+    loadComponent: () => import('./features/admin/kafka/kafka-admin').then((m) => m.KafkaAdmin),
+  },
+  {
     path: 'ingresar',
     title: 'Ingresar | Pedidos360',
     loadComponent: () => import('./features/ingresar/ingresar').then((m) => m.Ingresar),
