@@ -18,6 +18,10 @@ export function describirError(error: unknown): string {
     case 401:
       return 'El token fue rechazado (401). Puede estar expirado, o el issuer/audience no coincide con lo que valida el API Gateway.';
     case 403:
+      // ms-pago responde 403 con su motivo cuando el antifraude bloquea el intento
+      if (typeof error.error?.error === 'string') {
+        return error.error.error;
+      }
       return 'Token válido pero sin permisos (403). Lo rechaza el authorizer del '
         + 'API Gateway por los authorization scopes de la ruta, o el microservicio '
         + 'por el App Role.';

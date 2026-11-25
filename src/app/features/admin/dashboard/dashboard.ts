@@ -21,6 +21,10 @@ import { Icon } from '../../../shared/icon/icon';
  * Dashboard de analítica en tiempo real. Las métricas las calcula ms-analytics desde los
  * eventos de Kafka y llegan por WebSocket (STOMP): /topic/metricas cada vez que cambian
  * y /topic/alertas en el instante en que el antifraude bloquea un pago.
+ *
+ * El WebSocket solo existe en el nginx de la EC2 del frontend: el API Gateway HTTP no
+ * maneja WebSockets. Si la conexión no se logra (por ejemplo al entrar por la URL del
+ * API Gateway de frontend), las métricas se consultan por REST cada 10 segundos.
  */
 @Component({
   selector: 'app-dashboard',
@@ -35,10 +39,14 @@ export class Dashboard implements OnInit {
 
   protected readonly metricas = signal<Metricas | null>(null);
   protected readonly conectado = signal(false);
+  /** `true` cuando no hay WebSocket y las métricas se consultan por REST. */
+  protected readonly consultando = signal(false);
   protected readonly error = signal<string | null>(null);
   /** Alerta recién llegada por /topic/alertas (se resalta unos segundos). */
   protected readonly alertaNueva = signal<AlertaFraude | null>(null);
   private cliente: Client | null = null;
+  private sondeo: ReturnType<typeof setInterval> | null = null;
+  private esperaWs: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly maxClics = computed(() =>
     Math.max(1, ...(this.metricas()?.clicsPorMinuto ?? []).map((m) => m.total)),
@@ -55,13 +63,33 @@ export class Dashboard implements OnInit {
   );
 
   ngOnInit(): void {
+    this.cargarMetricas();
+    // El token se asegura antes de abrir el WebSocket: viaja en el CONNECT de STOMP
+    this.auth.asegurarRoles().subscribe(() => this.conectar());
+    this.destroyRef.onDestroy(() => {
+      this.cliente?.deactivate();
+      this.detenerSondeo();
+      if (this.esperaWs) clearTimeout(this.esperaWs);
+    });
+  }
+
+  private cargarMetricas(): void {
     this.analytics.metricas().subscribe({
       next: (m) => this.metricas.set(m),
       error: (e: unknown) => this.error.set(describirError(e)),
     });
-    // El token se asegura antes de abrir el WebSocket: viaja en el CONNECT de STOMP
-    this.auth.asegurarRoles().subscribe(() => this.conectar());
-    this.destroyRef.onDestroy(() => this.cliente?.deactivate());
+  }
+
+  private iniciarSondeo(): void {
+    if (this.sondeo || this.conectado()) return;
+    this.consultando.set(true);
+    this.sondeo = setInterval(() => this.cargarMetricas(), 10000);
+  }
+
+  private detenerSondeo(): void {
+    if (this.sondeo) clearInterval(this.sondeo);
+    this.sondeo = null;
+    this.consultando.set(false);
   }
 
   private conectar(): void {
@@ -77,6 +105,7 @@ export class Dashboard implements OnInit {
       },
       onConnect: () => {
         this.conectado.set(true);
+        this.detenerSondeo();
         this.error.set(null);
         this.cliente?.subscribe('/topic/metricas', (mensaje) => this.metricas.set(JSON.parse(mensaje.body)));
         this.cliente?.subscribe('/topic/alertas', (mensaje) => {
@@ -88,9 +117,14 @@ export class Dashboard implements OnInit {
         this.conectado.set(false);
         this.error.set(frame.headers['message'] ?? 'El servidor rechazó la conexión');
       },
-      onWebSocketClose: () => this.conectado.set(false),
+      onWebSocketClose: () => {
+        this.conectado.set(false);
+        this.iniciarSondeo();
+      },
     });
     this.cliente.activate();
+    // Si en 8 segundos no hay conexión, se pasa a consultar por REST mientras sigue reintentando
+    this.esperaWs = setTimeout(() => this.iniciarSondeo(), 8000);
   }
 
   protected alto(total: number): number {

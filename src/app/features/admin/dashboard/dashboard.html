@@ -12,7 +12,7 @@
       [class]="conectado() ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'"
     >
       <span class="w-2 h-2 rounded-full" [class]="conectado() ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'"></span>
-      {{ conectado() ? 'WebSocket conectado' : 'Conectando…' }}
+      {{ conectado() ? 'WebSocket conectado' : consultando() ? 'Actualizando cada 10 s (REST)' : 'Conectando…' }}
     </span>
   </div>
 
