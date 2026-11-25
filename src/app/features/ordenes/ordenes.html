@@ -56,6 +56,15 @@
     </div>
   }
 
+  <!-- Resultado de Webpay que no corresponde a una orden conocida (por ejemplo, un error de Transbank) -->
+  @if (resultadoPago(); as r) {
+    @if (!r.ordenId) {
+      <div class="mb-4 rounded-xl px-4 py-3 text-sm bg-amber-50 text-amber-800 border border-amber-200">
+        {{ r.texto }}
+      </div>
+    }
+  }
+
   <!-- Estado de Carga -->
   @if (cargando()) {
     <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-12 text-center">
@@ -285,6 +294,20 @@
                 >
                   {{ enviandoPago() ? 'Procesando...' : 'Confirmar pago' }}
                 </button>
+              </div>
+              <div class="sm:col-span-4 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-3">
+                <button
+                  type="button"
+                  (click)="pagarConWebpay(orden)"
+                  [disabled]="enviandoPago()"
+                  class="bg-[#d5006c] hover:bg-[#b3005a] disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-lg"
+                >
+                  Pagar con Webpay
+                </button>
+                <span class="text-[11px] text-gray-500">
+                  Transbank, ambiente de integración. Tarjeta de prueba VISA <code>4051 8856 0044 6623</code>,
+                  CVV <code>123</code>; en el banco simulado, RUT <code>11.111.111-1</code> y clave <code>123</code>.
+                </span>
               </div>
               <p class="sm:col-span-4 text-[11px] text-gray-500">
                 Pago simulado. Tarjetas de prueba: <code>4111 1111 1111 1111</code> se aprueba y

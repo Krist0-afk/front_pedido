@@ -8,7 +8,7 @@ export interface PagoRequest {
   cvv: string;
 }
 
-export type EstadoPago = 'APROBADO' | 'RECHAZADO' | 'BLOQUEADO_FRAUDE';
+export type EstadoPago = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'BLOQUEADO_FRAUDE';
 
 /** Espeja `PagoResponse` de ms-pago. */
 export interface Pago {
@@ -19,4 +19,12 @@ export interface Pago {
   estado: EstadoPago;
   motivo?: string | null;
   fecha: string;
+  metodo?: 'TARJETA' | 'WEBPAY';
+}
+
+/** Respuesta de ms-pago al iniciar un pago con Webpay Plus. */
+export interface InicioWebpay {
+  pagoId: number;
+  token: string;
+  url: string;
 }

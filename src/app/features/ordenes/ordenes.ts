@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MsalBroadcastService } from '@azure/msal-angular';
 import { InteractionStatus } from '@azure/msal-browser';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -39,6 +39,7 @@ export class Ordenes implements OnInit {
   private readonly catalogoService = inject(CatalogoService);
   private readonly facturacionService = inject(FacturacionService);
   private readonly pagosService = inject(PagosService);
+  private readonly ruta = inject(ActivatedRoute);
   private readonly msalBroadcast = inject(MsalBroadcastService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -69,6 +70,7 @@ export class Ordenes implements OnInit {
   protected readonly cantidadOrdenes = computed(() => this.ordenes().length);
 
   ngOnInit(): void {
+    this.mostrarRetornoWebpay();
     // Espera a que MSAL termine la adquisición/renovación del token antes de consultar el API Gateway
     this.msalBroadcast.inProgress$
       .pipe(
@@ -219,5 +221,40 @@ export class Ordenes implements OnInit {
           }
         });
       });
+  }
+
+  protected pagarConWebpay(orden: OrdenVista): void {
+    const ordenId = orden.id;
+    if (!ordenId) return;
+    this.enviandoPago.set(true);
+    this.resultadoPago.set(null);
+    this.pagosService.iniciarWebpay(ordenId, orden.total).subscribe({
+      next: (inicio) => this.pagosService.irAWebpay(inicio),
+      error: (e: HttpErrorResponse) => {
+        this.enviandoPago.set(false);
+        const cuerpo = e.error as { error?: string } | null;
+        this.resultadoPago.set({ ordenId, tipo: 'error', texto: cuerpo?.error ?? describirError(e) });
+      },
+    });
+  }
+
+  /** Al volver de Webpay, ms-pago redirige a /ordenes?pago=...&orden=... con el resultado. */
+  private mostrarRetornoWebpay(): void {
+    const params = this.ruta.snapshot.queryParamMap;
+    const resultado = params.get('pago');
+    const ordenId = Number(params.get('orden'));
+    if (!resultado) return;
+    const textos: Record<string, { tipo: 'ok' | 'rechazo' | 'error'; texto: string }> = {
+      aprobado: { tipo: 'ok', texto: 'Webpay aprobó el pago. Esperando la confirmación por Kafka...' },
+      rechazado: { tipo: 'rechazo', texto: 'Webpay rechazó el pago. Puedes intentarlo de nuevo.' },
+      anulado: { tipo: 'rechazo', texto: 'Anulaste el pago en Webpay o se agotó el tiempo.' },
+      error: { tipo: 'error', texto: 'No se pudo completar el pago con Webpay.' },
+    };
+    const mensaje = textos[resultado] ?? textos['error'];
+    this.resultadoPago.set({ ordenId: ordenId || 0, ...mensaje });
+    if (ordenId) {
+      this.ordenExpandida.set(ordenId);
+      this.esperarConfirmacion(ordenId);
+    }
   }
 }
