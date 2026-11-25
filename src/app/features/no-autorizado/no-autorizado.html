@@ -1,19 +1,27 @@
 <h1>No tienes permisos para esta sección</h1>
 
 <div class="aviso aviso-atencion">
-  Tu sesión es válida, pero el token no incluye el App Role
+  Tu sesión es válida, pero el token no incluye el rol
   @if (rol()) { <strong>{{ rol() }}</strong> } @else { requerido }
-  que exige el microservicio de compras.
+  que exige esta sección.
 </div>
 
 <div class="tarjeta">
   <h2>Cómo resolverlo</h2>
-  <p class="texto-suave">
-    En el portal de Entra ID: <em>App registrations → Pedidos360 → App roles</em>,
-    crea el rol y asígnalo al usuario en <em>Enterprise applications → Users and
-    groups</em>. Después cierra sesión y vuelve a entrar para que el tenant emita
-    un token nuevo con el claim <code>roles</code>.
-  </p>
+  @if (auth.proveedor() === 'cognito') {
+    <p class="texto-suave">
+      En AWS Cognito: <em>User pools → pedidos360 → Groups</em>, agrega al usuario
+      al grupo <strong>{{ rol() || 'requerido' }}</strong>. Después cierra sesión y
+      vuelve a entrar para que el token traiga el claim <code>cognito:groups</code>.
+    </p>
+  } @else {
+    <p class="texto-suave">
+      En el portal de Entra ID: <em>Enterprise applications → Pedidos360 → Users and
+      groups</em>, asigna al usuario el App Role
+      <strong>{{ rol() || 'requerido' }}</strong>. Después cierra sesión y vuelve a
+      entrar para que el tenant emita un token nuevo con el claim <code>roles</code>.
+    </p>
+  }
 
   <p class="texto-suave">
     Roles actuales en tu token:

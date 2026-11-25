@@ -78,9 +78,9 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string> | null>([
     // Solo `/privado` exige token. `/public` es `permitAll` en el backend: si
     // lo capturara el comodín, el interceptor forzaría login para ver el
-    // catálogo de forma anónima.
+    // catálogo de forma anónima. El comodín cubre también `/privado/{id}`.
     [
-      `${environment.api.baseUrl}${environment.api.catalogo}/privado`,
+      `${environment.api.baseUrl}${environment.api.catalogo}/privado*`,
       [...environment.api.scopes],
     ],
     [
@@ -97,6 +97,18 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
     ],
     [
       `${environment.api.baseUrl}${environment.api.facturacion}*`,
+      [...environment.api.scopes],
+    ],
+    [
+      `${environment.api.baseUrl}${environment.api.pagos}*`,
+      [...environment.api.scopes],
+    ],
+    [
+      `${environment.api.baseUrl}${environment.api.analytics}*`,
+      [...environment.api.scopes],
+    ],
+    [
+      `${environment.api.baseUrl}${environment.api.kafkaAdmin}*`,
       [...environment.api.scopes],
     ],
   ]);

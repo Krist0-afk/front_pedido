@@ -16,6 +16,8 @@ class AuthServiceFalso {
   nombre = () => 'Gustavo Cloud';
   email = () => 'gustavo@cloudnative.cl';
   roles = () => ['User'];
+  proveedor = () => 'azure' as const;
+  accessTokenClaims = () => ({ aud: 'api://pedidos360', roles: ['User'], exp: 1700000000 });
   logout = () => {};
 }
 
@@ -65,5 +67,15 @@ describe('Perfil', () => {
 
     expect(texto).toContain('No se pudo sincronizar automáticamente');
     expect(texto).toContain('Reintentar sincronización');
+  });
+
+  it('lista los claims del token', () => {
+    const fixture = configurar({ id: 1, nombre: 'Gustavo Cloud', correo: 'gustavo@cloudnative.cl' });
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Claims del token');
+    expect(texto).toContain('api://pedidos360');
+    expect(texto).toContain('1700000000');
+    expect(texto).toContain('tu cuenta Microsoft');
   });
 });

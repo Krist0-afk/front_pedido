@@ -54,6 +54,24 @@ export class Perfil implements OnInit {
       .join(''),
   );
 
+  protected readonly nombreProveedor = computed(() =>
+    this.auth.proveedor() === 'cognito'
+      ? 'tu cuenta de AWS Cognito'
+      : 'tu cuenta Microsoft (MSAL / Entra ID)',
+  );
+
+  protected readonly tipoToken = computed(() =>
+    this.auth.proveedor() === 'cognito' ? 'ID token de Cognito' : 'Access token de Entra ID',
+  );
+
+  /** Claims del token que viaja al API Gateway, con las fechas legibles. */
+  protected readonly claims = computed(() =>
+    Object.entries(this.auth.accessTokenClaims()).map(([nombre, valor]) => ({
+      nombre,
+      valor: formatearClaim(nombre, valor),
+    })),
+  );
+
   protected readonly permisos = computed(() =>
     this.auth.roles().map((rol) => PERMISOS[rol] ?? rol),
   );
@@ -92,4 +110,15 @@ export class Perfil implements OnInit {
   protected cerrarSesion(): void {
     this.auth.logout();
   }
+}
+
+const CLAIMS_FECHA = new Set(['exp', 'iat', 'nbf', 'auth_time']);
+
+function formatearClaim(nombre: string, valor: unknown): string {
+  if (CLAIMS_FECHA.has(nombre) && typeof valor === 'number') {
+    return `${new Date(valor * 1000).toLocaleString('es-CL')} (${valor})`;
+  }
+  if (Array.isArray(valor)) return valor.join(', ');
+  if (valor !== null && typeof valor === 'object') return JSON.stringify(valor);
+  return String(valor);
 }

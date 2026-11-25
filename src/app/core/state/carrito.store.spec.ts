@@ -21,6 +21,7 @@ describe('CarritoStore', () => {
   let store: CarritoStore;
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({});
     store = TestBed.inject(CarritoStore);
   });
@@ -82,5 +83,30 @@ describe('CarritoStore', () => {
 
     expect(store.items()).toEqual([]);
     expect(store.cantidadTotal()).toBe(0);
+  });
+
+  it('avisa los productos quitados, pero no el vaciado al comprar', () => {
+    const quitados: string[] = [];
+    store.quitados.subscribe((item) => quitados.push(item.product.id));
+    store.agregar(producto('prod-1', 5000));
+    store.agregar(producto('prod-2', 3000));
+
+    store.quitar('prod-1');
+    store.quitar('no-existe');
+    store.vaciar();
+
+    expect(quitados).toEqual(['prod-1']);
+  });
+
+  it('recupera la canasta guardada al recargar la página', () => {
+    store.agregar(producto('prod-1', 5000));
+    store.agregar(producto('prod-1', 5000));
+    TestBed.tick();
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+    const recargado = TestBed.inject(CarritoStore);
+
+    expect(recargado.cantidadDe('prod-1')).toBe(2);
   });
 });

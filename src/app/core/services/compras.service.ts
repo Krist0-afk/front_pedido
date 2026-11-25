@@ -31,6 +31,11 @@ export class ComprasService {
     return this.http.delete<void>(`${this.base}/carrito/${id}`);
   }
 
+  /** Avisa que se sacó un producto de la canasta local (publica CARRITO_QUITADO en Kafka). */
+  notificarQuitado(productoId: number, cantidad: number, valor: number): Observable<void> {
+    return this.http.post<void>(`${this.base}/carrito/quitado`, { productoId, cantidad, valor });
+  }
+
   /** Valida un cupón (publica CUPON_APLICADO en Kafka). */
   aplicarCupon(codigo: string, subtotal: number): Observable<CuponRespuesta> {
     return this.http.post<CuponRespuesta>(`${this.base}/cupon`, { codigo, subtotal });

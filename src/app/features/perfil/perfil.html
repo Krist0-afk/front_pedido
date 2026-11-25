@@ -12,7 +12,7 @@
     </div>
   </div>
 
-  <!-- Información de la cuenta Microsoft -->
+  <!-- Información de la cuenta -->
   <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5">
     <div class="flex items-center gap-4">
       <span
@@ -28,8 +28,36 @@
 
     <p class="text-[11px] text-gray-500 mt-4 flex items-center gap-1.5">
       <app-icon name="shield-check" class="w-3.5 h-3.5 text-emerald-700" />
-      Inicias sesión con tu cuenta Microsoft (MSAL / Entra ID). Pedidos 360 nunca ve tu contraseña.
+      Inicias sesión con {{ nombreProveedor() }}. Pedidos 360 nunca ve tu contraseña.
     </p>
+  </section>
+
+  <!-- Claims del JWT que viaja al API Gateway -->
+  <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 mt-6">
+    <div class="flex items-center gap-2 mb-3">
+      <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+        <app-icon name="shield-check" class="w-4 h-4" />
+      </div>
+      <div>
+        <h2 class="font-extrabold text-gray-900 text-base">Claims del token</h2>
+        <p class="text-xs text-gray-500">{{ tipoToken() }} que el API Gateway valida en cada llamada</p>
+      </div>
+    </div>
+
+    @if (claims().length) {
+      <dl class="rounded-xl border border-gray-200 divide-y divide-gray-100 text-xs">
+        @for (claim of claims(); track claim.nombre) {
+          <div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-3 px-3 py-2">
+            <dt class="font-mono font-semibold text-gray-700 break-all">{{ claim.nombre }}</dt>
+            <dd class="font-mono text-gray-600 break-all">{{ claim.valor }}</dd>
+          </div>
+        }
+      </dl>
+    } @else {
+      <div class="rounded-xl bg-gray-50 border border-gray-200 p-4 text-xs text-gray-600">
+        Todavía no hay un token cargado. Recarga la página si acabas de iniciar sesión.
+      </div>
+    }
   </section>
 
   <!-- Microservicio backend-usuario (Sincronización en la Nube) -->
@@ -152,7 +180,7 @@
   <section class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 mt-6">
     <h2 class="font-extrabold text-gray-900 text-base">Sesión</h2>
     <p class="text-xs text-gray-500 mt-1">
-      Cerrar sesión te desconecta también de tu cuenta Microsoft en este navegador.
+      Cerrar sesión te desconecta también de {{ nombreProveedor() }} en este navegador.
     </p>
     <button
       type="button"
